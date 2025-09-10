@@ -492,7 +492,7 @@ function lightUpLetters() {
       if (key) {
         // Add special lighting effect
         key.classList.add("key--lighting");
-        key.style.animation = "letter-glow 0.75s ease-in-out";
+        key.style.animation = "letter-glow 0.2s ease-in-out";
         
         // Play keyboard sound
         playKeyboardSound();
@@ -665,3 +665,4 @@ document.addEventListener("keydown", (e) => {
 // Initialize
 renderBoard();
 renderKeyboard();
+
