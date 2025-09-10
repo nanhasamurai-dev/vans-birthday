@@ -365,8 +365,8 @@ function createFloatingPhotos() {
     img.className = "floating-photo";
     
     // Calculate random position across entire viewport
-    const leftPos = Math.random() * (window.innerWidth - 120);
-    const topPos = Math.random() * (window.innerHeight - 120);
+    const leftPos = Math.random() * (window.innerWidth - 160);
+    const topPos = Math.random() * (window.innerHeight - 160);
     
     // Randomly select animation and duration
     const animation = animations[Math.floor(Math.random() * animations.length)];
@@ -375,8 +375,8 @@ function createFloatingPhotos() {
     
     img.style.cssText = `
       position: fixed;
-      width: 120px;
-      height: 120px;
+      width: 160px;
+      height: 160px;
       object-fit: cover;
       border-radius: 50%;
       border: 4px solid var(--ferrari-gold);
