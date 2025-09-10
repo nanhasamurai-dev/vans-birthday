@@ -6,10 +6,14 @@ const CONFIG = {
   friendName: "Vans",
   birthdayMessage: "Wishing you a day as amazing as you are!",
   galleryImages: [
-    "https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=300&h=300&fit=crop&crop=face",
-    "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop&crop=face",
-    "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=300&h=300&fit=crop&crop=face",
-    "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=300&h=300&fit=crop&crop=face"
+    "assets/vans1.jpg",
+    "assets/vans2.jpg", 
+    "assets/vans3.jpg",
+    "assets/vans4.jpg",
+    "assets/vans5.jpg",
+    "assets/vans6.jpg",
+    "assets/vans7.jpg",
+    "assets/vans8.jpg"
   ],
   videoEmbedHtml: '<iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" title="Birthday Video" allowfullscreen></iframe>'
 };
@@ -247,6 +251,26 @@ function updateKeyboardStatuses(result) {
   }
 }
 
+// Keyboard sound for letter lighting
+function playKeyboardSound() {
+  const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  const oscillator = audioContext.createOscillator();
+  const gainNode = audioContext.createGain();
+  
+  oscillator.connect(gainNode);
+  gainNode.connect(audioContext.destination);
+  
+  oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+  oscillator.type = 'sine';
+  
+  gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+  gainNode.gain.linearRampToValueAtTime(0.1, audioContext.currentTime + 0.01);
+  gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.1);
+  
+  oscillator.start(audioContext.currentTime);
+  oscillator.stop(audioContext.currentTime + 0.1);
+}
+
 // Birthday jingle sound
 function playBirthdayJingle() {
   const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -329,30 +353,46 @@ function createFloatingPhotos() {
     img.src = src;
     img.alt = `${CONFIG.friendName} photo`;
     img.className = "floating-photo";
+    
+    // Calculate random position across entire viewport
+    const leftPos = Math.random() * (window.innerWidth - 120);
+    const topPos = Math.random() * (window.innerHeight - 120);
+    
     img.style.cssText = `
       position: fixed;
       width: 120px;
       height: 120px;
       object-fit: cover;
       border-radius: 50%;
-      border: 3px solid var(--ferrari-gold);
-      box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+      border: 4px solid var(--ferrari-gold);
+      box-shadow: 0 0 25px rgba(255, 215, 0, 0.8), 0 0 50px rgba(220, 20, 60, 0.4);
       z-index: 1000;
-      pointer-events: none;
-      left: ${20 + (index * 15)}%;
-      top: ${30 + (index * 10)}%;
-      animation: float-around 4s ease-in-out infinite;
-      animation-delay: ${index * 0.5}s;
+      pointer-events: auto;
+      left: ${leftPos}px;
+      top: ${topPos}px;
+      animation: float-around-full 8s ease-in-out infinite;
+      animation-delay: ${index * 1.2}s;
+      cursor: pointer;
     `;
+    
+    // Add click interaction for photos
+    img.addEventListener("click", () => {
+      img.style.animation = "none";
+      img.style.transform = "scale(1.5) rotate(360deg)";
+      img.style.transition = "all 1s ease";
+      setTimeout(() => {
+        img.style.animation = "float-around-full 8s ease-in-out infinite";
+        img.style.transform = "";
+        img.style.transition = "";
+      }, 1000);
+    });
+    
     document.body.appendChild(img);
     photos.push(img);
   });
   
-  // Remove photos after animation
-  setTimeout(() => {
-    photos.forEach(img => img.remove());
-    showSurprisePopup();
-  }, 5000);
+  // Keep photos animating continuously - no removal
+  // Photos will animate forever until page refresh
 }
 
 function showSurprisePopup() {
@@ -438,6 +478,156 @@ function populateReveal() {
   revealVideoContainer.innerHTML = ""; // Video now handled separately
 }
 
+function lightUpLetters() {
+  const message = "HAPPY BIRTHDAY VANS";
+  const letters = message.split("");
+  
+  // First, restructure the grid to show the birthday message
+  restructureGridForMessage(message);
+  
+  letters.forEach((letter, index) => {
+    setTimeout(() => {
+      // Find the corresponding key on keyboard
+      const key = keyboard.querySelector(`[data-key="${letter}"]`);
+      if (key) {
+        // Add special lighting effect
+        key.classList.add("key--lighting");
+        key.style.animation = "letter-glow 0.75s ease-in-out";
+        
+        // Play keyboard sound
+        playKeyboardSound();
+        
+        // Find and light up the corresponding tile in the grid
+        lightUpGridTileByLetter(letter);
+        
+        // Remove effect after animation
+        setTimeout(() => {
+          key.classList.remove("key--lighting");
+          key.style.animation = "";
+        }, 750);
+      }
+    }, index * 750); // 750ms delay between each letter (slower)
+  });
+  
+  // Start photo animation after all letters are lit
+  setTimeout(() => {
+    createFloatingPhotos();
+  }, letters.length * 750 + 1000); // Wait for all letters + 1 second
+}
+
+function restructureGridForMessage(message) {
+  // Clear existing board
+  board.innerHTML = "";
+  
+  // Split message into words
+  const words = ["HAPPY", "BIRTHDAY", "VANS"];
+  
+  board.style.gridTemplateColumns = `repeat(8, 1fr)`; // 8 columns for each row
+  board.style.gridTemplateRows = `repeat(3, 1fr)`;   // 3 rows
+  board.style.gap = "8px";
+  board.style.justifyItems = "center";
+  board.style.margin = "12px 0 24px 0";
+  
+  let tileIndex = 0;
+  
+  // Create 8 tiles for each row (3 rows total)
+  for (let row = 0; row < 3; row++) {
+    const word = words[row];
+    const letters = word.split("");
+    
+    // Create 8 tiles for this row
+    for (let col = 0; col < 8; col++) {
+      const tile = document.createElement("div");
+      tile.className = "tile tile--message";
+      tile.id = `message-tile-${tileIndex}`;
+      
+      if (col < letters.length) {
+        // Fill with letter
+        tile.textContent = letters[col];
+        tile.style.cssText = `
+          width: 50px;
+          height: 50px;
+          border: 2px solid var(--tile-border);
+          border-radius: 4px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 700;
+          font-size: 20px;
+          text-transform: uppercase;
+          background: var(--bg);
+          color: var(--text);
+          opacity: 0.3;
+          transition: all 0.3s ease;
+          grid-column: ${col + 1};
+          grid-row: ${row + 1};
+        `;
+      } else {
+        // Empty tile
+        tile.textContent = "";
+        tile.style.cssText = `
+          width: 50px;
+          height: 50px;
+          border: 2px solid transparent;
+          border-radius: 4px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 700;
+          font-size: 20px;
+          background: transparent;
+          opacity: 0;
+          grid-column: ${col + 1};
+          grid-row: ${row + 1};
+        `;
+      }
+      
+      board.appendChild(tile);
+      tileIndex++;
+    }
+  }
+}
+
+function lightUpGridTileByLetter(letter) {
+  // Find all tiles with this letter and light up the first unlit one
+  const allTiles = board.querySelectorAll('.tile--message');
+  for (let tile of allTiles) {
+    if (tile.textContent === letter && !tile.classList.contains('tile--lit')) {
+      // Mark this tile as lit
+      tile.classList.add('tile--lit');
+      
+      // Light up the tile
+      tile.style.cssText = `
+        width: 50px;
+        height: 50px;
+        border: 2px solid var(--ferrari-gold);
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 20px;
+        text-transform: uppercase;
+        background: var(--ferrari-gold);
+        color: #000;
+        opacity: 1;
+        box-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
+        transform: scale(1.1);
+        transition: all 0.3s ease;
+        grid-column: ${tile.style.gridColumn};
+        grid-row: ${tile.style.gridRow};
+      `;
+      
+      // Add pulsing effect
+      setTimeout(() => {
+        tile.style.transform = "scale(1)";
+      }, 300);
+      
+      break; // Only light up one tile per letter
+    }
+  }
+}
+
 function winSequence() {
   state.gameOver = true;
   showToast("🏎️ Checkered flag! 🏁");
@@ -446,16 +636,15 @@ function winSequence() {
     playBirthdayJingle();
     startConfetti(6000);
     
-    // Slow transition with animated photos
+    // Light up letters first (this will also start photos after completion)
     setTimeout(() => {
-      createFloatingPhotos();
-    }, 2000);
+      lightUpLetters();
+    }, 1000);
     
-    // Show birthday modal after photos
+    // Show surprise popup at the very end (after all animations)
     setTimeout(() => {
-      populateReveal();
-      if (typeof reveal.showModal === "function") reveal.showModal();
-    }, 3000);
+      showSurprisePopup();
+    }, 20000); // Much later - after letter lighting + photos + confetti
   }, 800);
 }
 
@@ -471,18 +660,7 @@ document.addEventListener("keydown", (e) => {
   else if (/^[A-Z]$/.test(k)) onLetter(k);
 });
 
-const shareBtn = document.getElementById("shareBtn");
-shareBtn.addEventListener("click", async () => {
-  const text = `I solved a birthday Wordle for ${CONFIG.friendName}!`;
-  try {
-    if (navigator.share) {
-      await navigator.share({ text, url: location.href });
-    } else if (navigator.clipboard) {
-      await navigator.clipboard.writeText(`${text} ${location.href}`);
-      showToast("Link copied!");
-    }
-  } catch {}
-});
+// Removed share button functionality
 
 // Initialize
 renderBoard();

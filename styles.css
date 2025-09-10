@@ -104,6 +104,13 @@ body {
 .tile--correct { background: var(--correct); border-color: var(--correct); color: #fff; }
 .tile--present { background: var(--present); border-color: var(--present); color: #fff; }
 .tile--absent { background: var(--absent); border-color: var(--absent); color: #fff; }
+.tile--message {
+  background: var(--bg);
+  border: 2px solid var(--tile-border);
+  color: var(--text);
+  opacity: 0.3;
+  transition: all 0.3s ease;
+}
 
 .keyboard { 
   display: flex; 
@@ -141,6 +148,13 @@ body {
 .key--ok { background: var(--correct); color: #fff; border-color: var(--correct); }
 .key--present { background: var(--present); color: #fff; border-color: var(--present); }
 .key--absent { background: var(--absent); color: #fff; border-color: var(--absent); }
+.key--lighting { 
+  background: var(--ferrari-gold) !important; 
+  color: #000 !important; 
+  border-color: var(--ferrari-gold) !important; 
+  box-shadow: 0 0 20px rgba(255, 215, 0, 1), 0 0 40px rgba(255, 215, 0, 0.8) !important;
+  transform: scale(1.1) !important;
+}
 
 .toast {
   position: fixed;
@@ -235,23 +249,126 @@ body.celebrate .key--present {
   100% { text-shadow: 0 0 30px rgba(255, 215, 0, 1), 0 0 40px rgba(220, 20, 60, 0.5); }
 }
 
-/* Floating photos animation */
-@keyframes float-around {
-  0%, 100% { 
+/* Enhanced floating photos animation - full page coverage */
+@keyframes float-around-full {
+  0% { 
     transform: translate(0, 0) rotate(0deg) scale(1); 
+    opacity: 0.8;
+  }
+  10% { 
+    transform: translate(100px, -80px) rotate(15deg) scale(1.2); 
+    opacity: 1;
+  }
+  20% { 
+    transform: translate(200px, -40px) rotate(30deg) scale(0.9); 
     opacity: 0.9;
   }
+  30% { 
+    transform: translate(150px, 60px) rotate(-10deg) scale(1.1); 
+    opacity: 1;
+  }
+  40% { 
+    transform: translate(50px, 120px) rotate(-25deg) scale(0.85); 
+    opacity: 0.8;
+  }
+  50% { 
+    transform: translate(-80px, 80px) rotate(20deg) scale(1.3); 
+    opacity: 1;
+  }
+  60% { 
+    transform: translate(-150px, 20px) rotate(-15deg) scale(0.95); 
+    opacity: 0.9;
+  }
+  70% { 
+    transform: translate(-100px, -60px) rotate(25deg) scale(1.1); 
+    opacity: 1;
+  }
+  80% { 
+    transform: translate(20px, -120px) rotate(-20deg) scale(0.9); 
+    opacity: 0.8;
+  }
+  90% { 
+    transform: translate(80px, -50px) rotate(10deg) scale(1.15); 
+    opacity: 1;
+  }
+  100% { 
+    transform: translate(0, 0) rotate(0deg) scale(1); 
+    opacity: 0.8;
+  }
+}
+
+/* Original animation for reference */
+@keyframes float-around {
+  0% { 
+    transform: translate(0, 0) rotate(0deg) scale(1); 
+    opacity: 0.8;
+  }
+  12.5% { 
+    transform: translate(30px, -40px) rotate(8deg) scale(1.15); 
+    opacity: 1;
+  }
   25% { 
-    transform: translate(20px, -30px) rotate(5deg) scale(1.1); 
+    transform: translate(60px, -20px) rotate(15deg) scale(0.9); 
+    opacity: 0.9;
+  }
+  37.5% { 
+    transform: translate(40px, 20px) rotate(-5deg) scale(1.1); 
     opacity: 1;
   }
   50% { 
-    transform: translate(-15px, -20px) rotate(-3deg) scale(0.95); 
+    transform: translate(-20px, 30px) rotate(-12deg) scale(0.85); 
     opacity: 0.8;
   }
-  75% { 
-    transform: translate(25px, 10px) rotate(2deg) scale(1.05); 
+  62.5% { 
+    transform: translate(-50px, 10px) rotate(10deg) scale(1.2); 
     opacity: 1;
+  }
+  75% { 
+    transform: translate(-30px, -30px) rotate(-8deg) scale(0.95); 
+    opacity: 0.9;
+  }
+  87.5% { 
+    transform: translate(10px, -50px) rotate(5deg) scale(1.05); 
+    opacity: 1;
+  }
+  100% { 
+    transform: translate(0, 0) rotate(0deg) scale(1); 
+    opacity: 0.8;
+  }
+}
+
+/* Additional photo animations */
+@keyframes photo-glow {
+  0%, 100% { 
+    box-shadow: 0 0 25px rgba(255, 215, 0, 0.8), 0 0 50px rgba(220, 20, 60, 0.4);
+  }
+  50% { 
+    box-shadow: 0 0 35px rgba(255, 215, 0, 1), 0 0 70px rgba(220, 20, 60, 0.6), 0 0 100px rgba(255, 215, 0, 0.3);
+  }
+}
+
+@keyframes photo-bounce {
+  0%, 100% { 
+    transform: translateY(0);
+  }
+  50% { 
+    transform: translateY(-10px);
+  }
+}
+
+/* Letter lighting animation */
+@keyframes letter-glow {
+  0% { 
+    transform: scale(1);
+    box-shadow: 0 0 20px rgba(255, 215, 0, 1), 0 0 40px rgba(255, 215, 0, 0.8);
+  }
+  50% { 
+    transform: scale(1.2);
+    box-shadow: 0 0 30px rgba(255, 215, 0, 1), 0 0 60px rgba(255, 215, 0, 1), 0 0 80px rgba(220, 20, 60, 0.6);
+  }
+  100% { 
+    transform: scale(1.1);
+    box-shadow: 0 0 20px rgba(255, 215, 0, 1), 0 0 40px rgba(255, 215, 0, 0.8);
   }
 }
 
@@ -269,6 +386,22 @@ body.celebrate .key--present {
 
 .floating-photo {
   transition: all 0.3s ease;
+  animation: photo-glow 3s ease-in-out infinite, photo-bounce 2s ease-in-out infinite;
+  filter: brightness(1.1) contrast(1.1) saturate(1.2);
+}
+
+.floating-photo:nth-child(odd) {
+  animation: float-around-full 8s ease-in-out infinite, photo-glow 4s ease-in-out infinite, photo-bounce 2.5s ease-in-out infinite;
+}
+
+.floating-photo:nth-child(even) {
+  animation: float-around-full 10s ease-in-out infinite reverse, photo-glow 3.5s ease-in-out infinite, photo-bounce 1.8s ease-in-out infinite;
+}
+
+.floating-photo:hover {
+  transform: scale(1.2) !important;
+  filter: brightness(1.3) contrast(1.2) saturate(1.4);
+  z-index: 2000 !important;
 }
 
 .surprise-popup {
