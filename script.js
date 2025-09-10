@@ -15,7 +15,7 @@ const CONFIG = {
     "assets/vans7.jpg",
     "assets/vans8.jpg"
   ],
-  //videoEmbedHtml: '<iframe src="https://player.vimeo.com/video/1117547643?badge=0&amp;autopause=0&amp;player_id=0&amp;app_id=58479" width="1080" height="1920" frameborder="0" allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share" referrerpolicy="strict-origin-when-cross-origin" title="LoL Just Kidding"></iframe>'
+  videoEmbedHtml: '<iframe src="https://player.vimeo.com/video/1117547643?badge=0&amp;autopause=0&amp;player_id=0&amp;app_id=58479" width="1080" height="1920" frameborder="0" allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share" referrerpolicy="strict-origin-when-cross-origin" title="LoL Just Kidding"></iframe>'
 };
 
 // Allow URL overrides like ?name=Alex&word=CAKE
@@ -744,5 +744,6 @@ document.addEventListener("keydown", (e) => {
 // Initialize
 renderBoard();
 renderKeyboard();
+
 
 
