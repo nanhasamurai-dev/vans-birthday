@@ -15,7 +15,7 @@ const CONFIG = {
     "assets/vans7.jpg",
     "assets/vans8.jpg"
   ],
-  videoEmbedHtml: '<iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" title="Birthday Video" allowfullscreen></iframe>'
+  videoEmbedHtml: '<iframe src="https://player.vimeo.com/video/1117547643?badge=0&amp;autopause=0&amp;player_id=0&amp;app_id=58479" width="1080" height="1920" frameborder="0" allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share" referrerpolicy="strict-origin-when-cross-origin" title="LoL Just Kidding"></iframe>'
 };
 
 // Allow URL overrides like ?name=Alex&word=CAKE
@@ -319,7 +319,8 @@ function startConfetti(durationMs = 5000) {
     a: Math.random() * Math.PI
   }));
   let running = true;
-  setTimeout(() => running = false, durationMs);
+  // Remove timeout to make confetti run continuously
+  // setTimeout(() => running = false, durationMs);
   window.addEventListener("resize", resize);
   requestAnimationFrame(loop);
 
@@ -348,6 +349,15 @@ function startConfetti(durationMs = 5000) {
 
 function createFloatingPhotos() {
   const photos = [];
+  const animations = [
+    'float-around-full',
+    'spiral-dance', 
+    'bounce-zoom',
+    'wave-motion',
+    'zigzag-dance',
+    'orbit-motion'
+  ];
+  
   CONFIG.galleryImages.forEach((src, index) => {
     const img = document.createElement("img");
     img.src = src;
@@ -357,6 +367,11 @@ function createFloatingPhotos() {
     // Calculate random position across entire viewport
     const leftPos = Math.random() * (window.innerWidth - 120);
     const topPos = Math.random() * (window.innerHeight - 120);
+    
+    // Randomly select animation and duration
+    const animation = animations[Math.floor(Math.random() * animations.length)];
+    const duration = 6 + Math.random() * 4; // 6-10 seconds
+    const delay = index * 0.8 + Math.random() * 2; // Staggered start times
     
     img.style.cssText = `
       position: fixed;
@@ -370,21 +385,24 @@ function createFloatingPhotos() {
       pointer-events: auto;
       left: ${leftPos}px;
       top: ${topPos}px;
-      animation: float-around-full 8s ease-in-out infinite;
-      animation-delay: ${index * 1.2}s;
+      animation: ${animation} ${duration}s ease-in-out infinite;
+      animation-delay: ${delay}s;
       cursor: pointer;
     `;
     
-    // Add click interaction for photos
+    // Add click interaction for photos with special effect
     img.addEventListener("click", () => {
       img.style.animation = "none";
-      img.style.transform = "scale(1.5) rotate(360deg)";
-      img.style.transition = "all 1s ease";
+      img.style.transform = "scale(1.8) rotate(720deg)";
+      img.style.transition = "all 1.5s cubic-bezier(0.68, -0.55, 0.265, 1.55)";
+      img.style.boxShadow = "0 0 50px rgba(255, 215, 0, 1), 0 0 100px rgba(220, 20, 60, 0.8)";
+      
       setTimeout(() => {
-        img.style.animation = "float-around-full 8s ease-in-out infinite";
+        img.style.animation = `${animation} ${duration}s ease-in-out infinite`;
         img.style.transform = "";
         img.style.transition = "";
-      }, 1000);
+        img.style.boxShadow = "0 0 25px rgba(255, 215, 0, 0.8), 0 0 50px rgba(220, 20, 60, 0.4)";
+      }, 1500);
     });
     
     document.body.appendChild(img);
@@ -401,7 +419,6 @@ function showSurprisePopup() {
   popup.innerHTML = `
     <div class="surprise-content">
       <h3>🎉 Click here for surprise! 🎉</h3>
-      <p>Special birthday video awaits!</p>
     </div>
   `;
   popup.style.cssText = `
@@ -433,27 +450,89 @@ function showVideoModal() {
   videoModal.className = "video-modal";
   videoModal.innerHTML = `
     <form method="dialog">
-      <h2>🎬 Birthday Video for ${CONFIG.friendName}! 🎬</h2>
+      <div class="video-header">
+        <h2>🎬 Happy Birthday Vans 🎬</h2>
+        <button type="button" class="close-btn" aria-label="Close video">✕</button>
+      </div>
       <div class="video-container">
         ${CONFIG.videoEmbedHtml}
       </div>
-      <menu>
-        <button class="btn">Close</button>
-      </menu>
+      <div class="video-controls">
+        <button type="button" class="control-btn" id="playPauseBtn">▶️ Play</button>
+        <button type="button" class="control-btn" id="muteBtn">🔊 Unmute</button>
+        <button type="button" class="control-btn" id="fullscreenBtn">⛶ Fullscreen</button>
+        <div class="volume-control">
+          <label for="volumeSlider">🔊</label>
+          <input type="range" id="volumeSlider" min="0" max="100" value="100" class="volume-slider">
+        </div>
+      </div>
+      <div class="video-info">
+        <p>🎉 Enjoy this special birthday video! 🎉</p>
+        <p>Click anywhere outside the video to close</p>
+      </div>
     </form>
   `;
   videoModal.style.cssText = `
     border: none;
-    border-radius: 12px;
-    padding: 20px;
+    border-radius: 16px;
+    padding: 0;
     background: var(--ferrari-black);
     color: var(--text);
-    max-width: 800px;
-    width: 90vw;
+    max-width: 500px;
+    width: 95vw;
+    box-shadow: 0 0 50px rgba(220, 20, 60, 0.5);
   `;
-  videoModal.style.setProperty("::backdrop", "background: rgba(0,0,0,0.8)");
+  videoModal.style.setProperty("::backdrop", "background: rgba(0,0,0,0.9)");
   
   document.body.appendChild(videoModal);
+  
+  // Add event listeners for custom controls
+  const iframe = videoModal.querySelector('iframe');
+  const playPauseBtn = videoModal.querySelector('#playPauseBtn');
+  const muteBtn = videoModal.querySelector('#muteBtn');
+  const fullscreenBtn = videoModal.querySelector('#fullscreenBtn');
+  const volumeSlider = videoModal.querySelector('#volumeSlider');
+  const closeBtn = videoModal.querySelector('.close-btn');
+  
+  // Close button functionality
+  closeBtn.addEventListener('click', () => {
+    videoModal.close();
+  });
+  
+  // Play/Pause button (note: limited control over Vimeo iframe)
+  playPauseBtn.addEventListener('click', () => {
+    // Vimeo iframe doesn't allow external control, so we'll just show a message
+    showToast("Use the video controls to play/pause");
+  });
+  
+  // Mute button (note: limited control over Vimeo iframe)
+  muteBtn.addEventListener('click', () => {
+    showToast("Use the video controls to mute/unmute");
+  });
+  
+  // Fullscreen button
+  fullscreenBtn.addEventListener('click', () => {
+    if (iframe.requestFullscreen) {
+      iframe.requestFullscreen();
+    } else if (iframe.webkitRequestFullscreen) {
+      iframe.webkitRequestFullscreen();
+    } else if (iframe.msRequestFullscreen) {
+      iframe.msRequestFullscreen();
+    }
+  });
+  
+  // Volume slider (note: limited control over Vimeo iframe)
+  volumeSlider.addEventListener('input', (e) => {
+    showToast(`Volume: ${e.target.value}%`);
+  });
+  
+  // Close on backdrop click
+  videoModal.addEventListener('click', (e) => {
+    if (e.target === videoModal) {
+      videoModal.close();
+    }
+  });
+  
   if (typeof videoModal.showModal === "function") {
     videoModal.showModal();
   }
@@ -506,13 +585,13 @@ function lightUpLetters() {
           key.style.animation = "";
         }, 750);
       }
-    }, index * 150); // 750ms delay between each letter (slower)
+    }, index * 100); // 100ms delay between each letter (faster)
   });
   
   // Start photo animation after all letters are lit
   setTimeout(() => {
     createFloatingPhotos();
-  }, letters.length * 750 + 1000); // Wait for all letters + 1 second
+  }, letters.length * 100 + 500); // Wait for all letters + 0.5 seconds
 }
 
 function restructureGridForMessage(message) {
@@ -634,7 +713,7 @@ function winSequence() {
   setTimeout(() => {
     document.body.classList.add("celebrate");
     playBirthdayJingle();
-    startConfetti(6000);
+    startConfetti(); // Run continuously
     
     // Light up letters first (this will also start photos after completion)
     setTimeout(() => {

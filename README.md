@@ -33,3 +33,4 @@ index.html?name=Alex&msg=Have%20an%20amazing%20day!&word=CAKES
 - The word list is intentionally small; update `WORDS` in `script.js` if you want more.
 - The layout is responsive and works well on mobile.
 
+
