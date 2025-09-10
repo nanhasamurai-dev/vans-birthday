@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Wordle Birthday Surprise</title>
+    <meta name="description" content="A custom Wordle-style game that becomes a birthday surprise." />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <h1 class="title">Wordle Birthday</h1>
+      <button id="helpBtn" class="icon-btn" aria-label="How to play">?</button>
+    </header>
+
+    <main class="game">
+      <section class="board" id="board" aria-label="Guess board" aria-live="polite"></section>
+
+      <section class="keyboard" id="keyboard" aria-label="On-screen keyboard"></section>
+
+      <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    </main>
+
+    <dialog id="howto" class="modal">
+      <form method="dialog">
+        <h2>How to play</h2>
+        <p>Guess the hidden word in 6 tries. Each guess must be a valid word. After each guess, tile colors show how close your guess was.</p>
+        <ul>
+          <li><span class="legend legend--correct">C</span> Correct letter, correct spot</li>
+          <li><span class="legend legend--present">P</span> Correct letter, wrong spot</li>
+          <li><span class="legend legend--absent">A</span> Letter not in the word</li>
+        </ul>
+        <menu>
+          <button class="btn">Got it</button>
+        </menu>
+      </form>
+    </dialog>
+
+    <dialog id="reveal" class="modal">
+      <form method="dialog" class="reveal">
+        <h2 id="revealTitle">Happy Birthday!</h2>
+        <p id="revealMessage">You solved it! Wishing you the best day 🎉</p>
+        <div id="revealGallery" class="gallery" aria-label="Photo gallery"></div>
+        <div id="revealVideoContainer" class="video"></div>
+        <menu>
+          <button id="shareBtn" class="btn">Share</button>
+          <button class="btn">Close</button>
+        </menu>
+      </form>
+    </dialog>
+
+    <canvas id="confetti" class="confetti" aria-hidden="true"></canvas>
+
+    <script src="script.js" defer></script>
+  </body>
+  </html>
