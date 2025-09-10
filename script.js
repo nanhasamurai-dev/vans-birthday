@@ -506,7 +506,7 @@ function lightUpLetters() {
           key.style.animation = "";
         }, 750);
       }
-    }, index * 750); // 750ms delay between each letter (slower)
+    }, index * 150); // 750ms delay between each letter (slower)
   });
   
   // Start photo animation after all letters are lit
