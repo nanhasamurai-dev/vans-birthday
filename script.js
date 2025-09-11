@@ -169,6 +169,15 @@ function onEnter() {
   if (state.currentRow >= CONFIG.maxGuesses) {
     state.gameOver = true;
     showToast(state.solution);
+    // Hide hint and keyboard after game is over (loss case)
+    const hint = document.getElementById('hint');
+    const keyboard = document.getElementById('keyboard');
+    if (hint) hint.style.display = 'none';
+    if (keyboard) keyboard.style.display = 'none';
+    // Show play again option after loss
+    setTimeout(() => {
+      showPlayAgainPopup();
+    }, 2000);
   }
 }
 
@@ -373,20 +382,40 @@ function createFloatingPhotos() {
     const j = Math.floor(Math.random() * (i + 1));
     [effectOrder[i], effectOrder[j]] = [effectOrder[j], effectOrder[i]];
   }
+  // Define size classifications
+  const sizeClasses = [
+    { name: 'small', baseSize: 80, range: 20 },    // 70-90px
+    { name: 'medium', baseSize: 110, range: 20 },  // 100-120px
+    { name: 'large', baseSize: 140, range: 20 },   // 130-150px
+    { name: 'xlarge', baseSize: 170, range: 20 }   // 160-180px
+  ];
+  
+  // Ensure at least one photo from each size class
+  const photoSizeAssignments = [];
+  CONFIG.galleryImages.forEach((src, index) => {
+    const guaranteedClass = index < sizeClasses.length ? index : Math.floor(Math.random() * sizeClasses.length);
+    photoSizeAssignments.push(guaranteedClass);
+  });
+  
   CONFIG.galleryImages.forEach((src, index) => {
     const img = document.createElement("img");
     img.src = src;
     img.alt = `${CONFIG.friendName} photo`;
     img.className = "floating-photo";
-    // Device-adaptive sizing
-    const viewportMin = Math.min(window.innerWidth, window.innerHeight);
-    const size = Math.max(110, Math.min(180, Math.floor(viewportMin / 5)));
+    
+    // Assign size class
+    const sizeClassIndex = photoSizeAssignments[index];
+    const sizeClass = sizeClasses[sizeClassIndex];
+    const baseSize = sizeClass.baseSize + Math.random() * sizeClass.range - sizeClass.range/2;
+    const size = Math.max(60, Math.min(200, baseSize));
+    
     const leftPos = Math.max(0, Math.random() * (window.innerWidth - size));
     const topPos = Math.max(0, Math.random() * (window.innerHeight - size));
-    // Randomized glow colors (HSL-based with alpha)
+    // Randomized glow colors and border colors (HSL-based with alpha)
     const hue = Math.floor(Math.random() * 360);
     const strongGlow = `hsla(${hue} 100% 60% / 1)`;
     const softGlow = `hsla(${(hue + 30) % 360} 100% 60% / 0.6)`;
+    const borderColor = `hsla(${hue} 90% 65% / 1)`;
     
     const tiltAnim = tiltAnimations[Math.floor(Math.random() * tiltAnimations.length)];
     const duration = 10 + Math.random() * 8; // unused for path now
@@ -415,12 +444,13 @@ function createFloatingPhotos() {
       height: 100%;
       object-fit: cover;
       border-radius: 50%;
-      border: 4px solid var(--ferrari-gold);
+      border: 4px solid ${borderColor};
       box-shadow: 0 0 25px ${softGlow}, 0 0 50px ${strongGlow};
       cursor: pointer;
-      will-change: transform, box-shadow;
+      will-change: transform;
       transform-style: preserve-3d;
-      animation: photo-glow 3s ease-in-out infinite, photo-bounce 2s ease-in-out infinite, ${tiltAnim} ${tiltDuration}s ease-in-out infinite alternate;
+      transition: all 0.3s ease-out;
+      animation: photo-glow 4s ease-in-out infinite, ${tiltAnim} ${(tiltDuration + 2)}s ease-in-out infinite alternate;
       animation-delay: ${delay}s;
     `;
     // Unique click animations per photo, guaranteed assignment
@@ -489,9 +519,9 @@ function createFloatingPhotos() {
     
     wrap.appendChild(img);
     document.body.appendChild(wrap);
-    // Physics state per wrapper
+    // Physics state per wrapper - balanced speed for smooth but lively animation
     const angle = Math.random() * Math.PI * 2;
-    const speed = 140 + Math.random() * 80; // px/s
+    const speed = 120 + Math.random() * 80; // px/s
     const state = {
       wrap,
       img,
@@ -500,6 +530,10 @@ function createFloatingPhotos() {
       vx: Math.cos(angle) * speed,
       vy: Math.sin(angle) * speed,
       size,
+      currentSizeClass: sizeClassIndex,
+      targetSize: size,
+      sizeTransitionSpeed: 0.02 + Math.random() * 0.03, // Random transition speed
+      nextSizeChangeTime: performance.now() + 3000 + Math.random() * 5000, // 3-8 seconds
       nextIdx: (index + 1) % CONFIG.galleryImages.length
     };
     wrappers.push(state);
@@ -517,30 +551,88 @@ function createFloatingPhotos() {
 
 function startFloatingPhotoBounceLoop() {
   let last = performance.now();
+  let frameCount = 0;
+  
   function step(now) {
-    const dt = Math.min(32, now - last) / 1000; // cap delta
+    const dt = Math.min(16.67, now - last) / 1000; // cap at 60fps
     last = now;
+    frameCount++;
+    
     const states = window._floatingPhotos || [];
     const maxX = Math.max(0, window.innerWidth);
     const maxY = Math.max(0, window.innerHeight);
+    
+    // Size classifications for dynamic sizing
+    const sizeClasses = [
+      { name: 'small', baseSize: 80, range: 20 },
+      { name: 'medium', baseSize: 110, range: 20 },
+      { name: 'large', baseSize: 140, range: 20 },
+      { name: 'xlarge', baseSize: 170, range: 20 }
+    ];
+    
+    // Process all photos each frame for smoother animation
     states.forEach((s) => {
       if (!s || !s.wrap) return;
       if (s._inGame) return; // skip physics for the active game ball
+      
+      // Handle size transitions
+      if (now >= s.nextSizeChangeTime) {
+        // Ensure at least one photo from each size class exists
+        const classCounts = [0, 0, 0, 0];
+        states.forEach(state => {
+          if (state && !state._inGame) classCounts[state.currentSizeClass]++;
+        });
+        
+        // Find classes with no representatives
+        const emptyClasses = classCounts.map((count, index) => count === 0 ? index : -1).filter(i => i >= 0);
+        
+        let newSizeClass;
+        if (emptyClasses.length > 0) {
+          // Assign to an empty class
+          newSizeClass = emptyClasses[Math.floor(Math.random() * emptyClasses.length)];
+        } else {
+          // Random class change
+          do {
+            newSizeClass = Math.floor(Math.random() * sizeClasses.length);
+          } while (newSizeClass === s.currentSizeClass && Math.random() > 0.3); // 70% chance to change class
+        }
+        
+        s.currentSizeClass = newSizeClass;
+        const newSizeClass_obj = sizeClasses[newSizeClass];
+        s.targetSize = newSizeClass_obj.baseSize + Math.random() * newSizeClass_obj.range - newSizeClass_obj.range/2;
+        s.targetSize = Math.max(60, Math.min(200, s.targetSize));
+        s.nextSizeChangeTime = now + 4000 + Math.random() * 6000; // 4-10 seconds
+      }
+      
+      // Smooth size transition
+      if (Math.abs(s.size - s.targetSize) > 1) {
+        const sizeDiff = s.targetSize - s.size;
+        s.size += sizeDiff * s.sizeTransitionSpeed;
+        
+        // Update wrapper and image size
+        s.wrap.style.width = `${s.size}px`;
+        s.wrap.style.height = `${s.size}px`;
+        s.wrap.style.setProperty('--ph-size', `${s.size}px`);
+      }
+      
       s.x += s.vx * dt;
       s.y += s.vy * dt;
       const right = maxX - s.size;
       const bottom = maxY - s.size;
       let bounced = false;
+      
       if (s.x <= 0) { s.x = 0; s.vx = Math.abs(s.vx); bounced = true; }
       else if (s.x >= right) { s.x = right; s.vx = -Math.abs(s.vx); bounced = true; }
       if (s.y <= 0) { s.y = 0; s.vy = Math.abs(s.vy); bounced = true; }
       else if (s.y >= bottom) { s.y = bottom; s.vy = -Math.abs(s.vy); bounced = true; }
+      
       if (bounced && s.img) {
         try {
           s.img.src = CONFIG.galleryImages[s.nextIdx];
           s.nextIdx = (s.nextIdx + 1) % CONFIG.galleryImages.length;
         } catch {}
       }
+      
       s.wrap.style.transform = `translate3d(${s.x}px, ${s.y}px, 0)`;
     });
 
@@ -615,12 +707,25 @@ function startPhotoPaddleGame(state) {
   const img = state.img;
   if (!wrap || !img) return;
   state._inGame = true;
+  // Mark wrapper as in-game for CSS override
+  wrap.setAttribute('data-in-game', 'true');
   // Bring game layer to top
   const prevZ = wrap.style.zIndex;
   wrap.style.zIndex = '3000';
-  // Hide other photos entirely
+  // Hide other photos entirely and stop their animations
   try {
-    (window._floatingPhotos || []).forEach((s) => { if (s !== state) { const w = s.wrap; if (w) w.style.display = 'none'; } });
+    (window._floatingPhotos || []).forEach((s) => { 
+      if (s !== state) { 
+        const w = s.wrap; 
+        if (w) {
+          w.style.display = 'none';
+          w.style.willChange = 'auto'; // Remove performance hint
+        }
+        if (s.img) {
+          s.img.style.animation = 'none'; // Stop all animations
+        }
+      }
+    });
   } catch {}
 
   // Create paddle
@@ -659,17 +764,42 @@ function startPhotoPaddleGame(state) {
   }
   window.addEventListener('keydown', onKey);
 
-  // Ball uses the clicked photo wrapper
+  // Ball uses the clicked photo wrapper - make it smaller for better gameplay
   let x = state.x;
   let y = state.y;
   let vx = Math.sign(state.vx || 1) || 1;
   let vy = Math.sign(state.vy || 1) || 1;
-  let speed = Math.max(220, Math.hypot(state.vx, state.vy));
-  const size = state.size;
+  const originalSpeed = Math.max(220, Math.hypot(state.vx, state.vy));
+  let speed = originalSpeed;
+  const originalSize = state.size;
+  const size = Math.max(60, originalSize * 0.6); // Make photo 60% smaller, minimum 60px
   let lastSwap = 0;
   let running = true;
   let lastX = x, lastY = y;
   let score = 0;
+  
+  // Store original styles to restore later
+  const originalAnimation = img.style.animation;
+  const originalTransform = img.style.transform;
+  const originalTransition = img.style.transition;
+  const originalBoxShadow = img.style.boxShadow;
+  const originalFilter = img.style.filter;
+  
+  // Completely remove all visual effects that could interfere with collision detection
+  img.style.animation = 'none !important';
+  img.style.transform = 'none !important';
+  img.style.transition = 'none !important';
+  img.style.boxShadow = 'none !important';
+  img.style.filter = 'none !important';
+  
+  // Also remove wrapper effects
+  wrap.style.animation = 'none !important';
+  wrap.style.transform = 'translate3d(' + x + 'px, ' + y + 'px, 0) !important';
+  
+  // Resize the photo for gameplay
+  wrap.style.width = `${size}px`;
+  wrap.style.height = `${size}px`;
+  wrap.style.setProperty('--ph-size', `${size}px`);
 
   // Score UI
   const scoreEl = document.createElement('div');
@@ -681,52 +811,85 @@ function startPhotoPaddleGame(state) {
   scoreEl.textContent = 'Score: 0';
   document.body.appendChild(scoreEl);
 
-  function gameStep(t) {
+  let lastTime = performance.now();
+  const gameStartTime = performance.now();
+  
+  function gameStep(currentTime) {
     if (!running) return;
-    const dt = 1 / 60; // fixed timestep for stable gameplay
-    for (let i = 0; i < 1; i++) {
-      x += vx * speed * dt;
-      y += vy * speed * dt;
-      // Distance increment for score
-      const dx = x - lastX; const dy = y - lastY;
-      const d = Math.hypot(dx, dy);
-      score += d * 10; // 10x distance
-      lastX = x; lastY = y;
-      scoreEl.textContent = `Score: ${Math.floor(score)}`;
-      const right = window.innerWidth - size;
-      const bottom = window.innerHeight - size;
-      // Wall collisions (top/left/right reflect, bottom loses unless paddle hit)
-      if (x <= 0) { x = 0; vx = Math.abs(vx); speed *= 1.04; swapImage(); }
-      else if (x >= right) { x = right; vx = -Math.abs(vx); speed *= 1.04; swapImage(); }
-      if (y <= 0) { y = 0; vy = Math.abs(vy); speed *= 1.04; swapImage(); }
+    
+    const deltaTime = Math.min((currentTime - lastTime) / 1000, 1/30); // Cap at 30fps minimum
+    lastTime = currentTime;
+    
+    // Update position
+    x += vx * speed * deltaTime;
+    y += vy * speed * deltaTime;
+    
+    // Score is now seconds played
+    score = (currentTime - gameStartTime) / 1000;
+    
+    // Update score display every 100ms
+    if (Math.floor(currentTime / 100) !== Math.floor((currentTime - deltaTime * 1000) / 100)) {
+      scoreEl.textContent = `Time: ${score.toFixed(1)}s`;
+    }
+    
+    const right = window.innerWidth - size;
+    const bottom = window.innerHeight - size;
+    
+    // Wall collisions (top/left/right reflect, bottom loses unless paddle hit)
+    if (x <= 0) { 
+      x = 0; 
+      vx = Math.abs(vx); 
+      speed *= 1.08; // Gradual speed increase
+      swapImage(); 
+    }
+    else if (x >= right) { 
+      x = right; 
+      vx = -Math.abs(vx); 
+      speed *= 1.08; // Gradual speed increase
+      swapImage(); 
+    }
+    if (y <= 0) { 
+      y = 0; 
+      vy = Math.abs(vy); 
+      speed *= 1.08; // Gradual speed increase
+      swapImage(); 
+    }
 
-      // Paddle collision
-      const paddleTop = window.innerHeight - 28;
-      if (y + size >= paddleTop && y + size <= paddleTop + paddleHeight) {
-        const center = x + size / 2;
-        if (center >= paddleX && center <= paddleX + paddleWidth) {
-          y = paddleTop - size;
-          // Reflect with angle based on hit position
-          const hitPos = (center - paddleX) / paddleWidth - 0.5; // -0.5..0.5
-          const angle = hitPos * (Math.PI / 2.5); // spread
-          const speedMag = speed * 1.07; // increase after paddle bounce
-          vx = Math.sin(angle) * speedMag / speed;
-          vy = -Math.cos(angle) * speedMag / speed;
-          speed = speedMag;
-          swapImage();
-        }
-      }
-
-      // Missed paddle -> end game
-      if (y > bottom + 24) {
-        endGame(false);
-        return;
+    // Paddle collision - fixed to ensure photo border actually touches paddle
+    const paddleTop = window.innerHeight - 28;
+    const ballBottom = y + size;
+    const ballTop = y;
+    const ballLeft = x;
+    const ballRight = x + size;
+    const ballCenterX = x + size / 2;
+    
+    // Check if ball is at paddle level and overlapping horizontally
+    if (ballBottom >= paddleTop && ballTop <= paddleTop + paddleHeight) {
+      if (ballCenterX >= paddleX && ballCenterX <= paddleX + paddleWidth) {
+        // Ensure ball is exactly touching paddle top
+        y = paddleTop - size;
+        // Reflect with angle based on hit position
+        const hitPos = (ballCenterX - paddleX) / paddleWidth - 0.5; // -0.5..0.5
+        const angle = hitPos * (Math.PI / 2.5); // spread
+        const speedMag = speed * 1.08; // Gradual speed increase
+        vx = Math.sin(angle) * speedMag / speed;
+        vy = -Math.cos(angle) * speedMag / speed;
+        speed = speedMag;
+        swapImage();
       }
     }
-    // Apply transform
+
+    // Missed paddle -> end game
+    if (y > bottom + 24) {
+      endGame(false);
+      return;
+    }
+    
+    // Apply transform with hardware acceleration
     wrap.style.transform = `translate3d(${x}px, ${y}px, 0)`;
     requestAnimationFrame(gameStep);
   }
+  
   requestAnimationFrame(gameStep);
 
   function swapImage() {
@@ -741,22 +904,163 @@ function startPhotoPaddleGame(state) {
 
   function endGame(won) {
     running = false;
-    // Restore other photos
-    try { (window._floatingPhotos || []).forEach((s) => { const w = s.wrap; if (w) { w.style.display = ''; w.style.opacity = '1'; } }); } catch {}
+    
+    // Save score to leaderboard
+    const finalScore = Math.floor(score);
+    saveScore(finalScore);
+    
+    // Show game over popup with final score
+    showGameOverPopup(finalScore);
+    
+    // Restore other photos and their animations
+    try { 
+      (window._floatingPhotos || []).forEach((s) => { 
+        const w = s.wrap; 
+        if (w) { 
+          w.style.display = ''; 
+          w.style.opacity = '1';
+          w.style.willChange = 'transform'; // Re-enable performance hint
+        }
+        if (s.img && s !== state) {
+          // Restart animations for other photos
+          const tiltAnimations = ['threeD-tilt-a', 'threeD-tilt-b', 'threeD-tilt-c', 'threeD-tilt-d'];
+          const tiltAnim = tiltAnimations[Math.floor(Math.random() * tiltAnimations.length)];
+          const tiltDuration = 6 + Math.random() * 5;
+          s.img.style.animation = `photo-glow 3s ease-in-out infinite, photo-bounce 2s ease-in-out infinite, ${tiltAnim} ${tiltDuration}s ease-in-out infinite alternate`;
+        }
+      }); 
+    } catch {}
     // Remove paddle and listeners
     try { paddle.remove(); } catch {}
     try { scoreEl.remove(); } catch {}
     window.removeEventListener('mousemove', onMove);
     window.removeEventListener('touchmove', onMove);
     window.removeEventListener('keydown', onKey);
-    // Restore this photo to physics pool with current position/velocity upward
-    state.x = Math.max(0, Math.min(window.innerWidth - size, x));
-    state.y = Math.max(0, Math.min(window.innerHeight - size, y));
-    state.vx = vx * speed; // convert back to px/s
-    state.vy = vy * speed;
+    // Restore photo to original size, effects, and position
+    wrap.style.width = `${originalSize}px`;
+    wrap.style.height = `${originalSize}px`;
+    wrap.style.setProperty('--ph-size', `${originalSize}px`);
+    
+    // Restore original visual effects
+    img.style.animation = originalAnimation;
+    img.style.transform = originalTransform;
+    img.style.transition = originalTransition;
+    img.style.boxShadow = originalBoxShadow;
+    img.style.filter = originalFilter;
+    
+    // Restore wrapper effects
+    wrap.style.animation = '';
+    
+    // Restore this photo to physics pool with original speed
+    state.x = Math.max(0, Math.min(window.innerWidth - originalSize, x));
+    state.y = Math.max(0, Math.min(window.innerHeight - originalSize, y));
+    state.vx = vx * originalSpeed; // Restore original speed
+    state.vy = vy * originalSpeed;
+    state.size = originalSize; // Restore original size to state
     wrap.style.zIndex = prevZ;
+    wrap.removeAttribute('data-in-game');
     state._inGame = false;
   }
+}
+
+function showGameOverPopup(finalScore) {
+  const popup = document.createElement("div");
+  popup.className = "game-over-popup";
+  popup.innerHTML = `
+    <div class="game-over-content">
+      <h2>🎮 Game Over! 🎮</h2>
+      <div class="final-score">
+        <span class="score-label">Final Score:</span>
+        <span class="score-value">${finalScore}</span>
+      </div>
+      <p class="score-message">${getScoreMessage(finalScore)}</p>
+      <div class="popup-buttons">
+        <button class="play-again-btn" onclick="this.parentElement.parentElement.parentElement.remove()">
+          Play Again
+        </button>
+        <button class="close-btn" onclick="this.parentElement.parentElement.parentElement.remove()">
+          Close
+        </button>
+      </div>
+    </div>
+  `;
+  popup.style.cssText = `
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 4000;
+    backdrop-filter: blur(5px);
+  `;
+  
+  const content = popup.querySelector('.game-over-content');
+  content.style.cssText = `
+    background: linear-gradient(135deg, var(--ferrari-black), #2a0a0a);
+    border: 2px solid var(--ferrari-gold);
+    border-radius: 16px;
+    padding: 30px;
+    text-align: center;
+    color: var(--text);
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.5), 0 0 60px rgba(220, 20, 60, 0.3);
+    animation: popup-bounce 0.5s ease-out;
+    max-width: 400px;
+    width: 90vw;
+  `;
+  
+  const scoreValue = popup.querySelector('.score-value');
+  scoreValue.style.cssText = `
+    font-size: 48px;
+    font-weight: 800;
+    color: var(--ferrari-gold);
+    text-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+    display: block;
+    margin: 10px 0;
+  `;
+  
+  const playAgainBtn = popup.querySelector('.play-again-btn');
+  playAgainBtn.style.cssText = `
+    background: linear-gradient(135deg, var(--ferrari-red), #ff4757);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 20px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(220, 20, 60, 0.4);
+  `;
+  
+  playAgainBtn.addEventListener('mouseenter', () => {
+    playAgainBtn.style.transform = 'translateY(-2px)';
+    playAgainBtn.style.boxShadow = '0 6px 20px rgba(220, 20, 60, 0.6)';
+  });
+  
+  playAgainBtn.addEventListener('mouseleave', () => {
+    playAgainBtn.style.transform = 'translateY(0)';
+    playAgainBtn.style.boxShadow = '0 4px 15px rgba(220, 20, 60, 0.4)';
+  });
+  
+  document.body.appendChild(popup);
+  
+  // Auto-remove after 10 seconds if user doesn't interact
+  setTimeout(() => {
+    if (popup.parentElement) {
+      popup.remove();
+    }
+  }, 10000);
+}
+
+function getScoreMessage(score) {
+  if (score >= 60) return "🏆 Legendary Survivor! 🏆";
+  if (score >= 45) return "🌟 Amazing Reflexes! 🌟";
+  if (score >= 30) return "🎯 Great Skills! 🎯";
+  if (score >= 20) return "👍 Nice Endurance! 👍";
+  if (score >= 10) return "🎮 Good Effort! 🎮";
+  return "😬 Ewwwwww 😬";
 }
 
 function showSurprisePopup() {
@@ -880,7 +1184,393 @@ function showVideoModal() {
     } catch {}
     restoreBodyScroll();
     videoModal.remove();
+    
+    // Show menu after video popup is closed
+    showGameMenu();
   });
+}
+
+function showGameMenu() {
+  // Remove any existing menu
+  const existingMenu = document.getElementById('game-menu');
+  if (existingMenu) existingMenu.remove();
+  
+  const menu = document.createElement('div');
+  menu.id = 'game-menu';
+  menu.innerHTML = `
+    <div class="menu-content">
+      <button class="menu-btn play-game-btn" onclick="startBounceGame()">
+        🎮 Play Game
+      </button>
+      <button class="menu-btn watch-video-btn" onclick="showVideoModal()">
+        🎬 Watch Video
+      </button>
+      <button class="menu-btn leaderboard-btn" onclick="showLeaderboard()">
+        🏆 Leaderboard
+      </button>
+    </div>
+  `;
+  
+  menu.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1500;
+    background: linear-gradient(135deg, var(--ferrari-black), #2a0a0a);
+    border: 2px solid var(--ferrari-gold);
+    border-radius: 12px;
+    padding: 15px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+  `;
+  
+  const style = document.createElement('style');
+  style.textContent = `
+    .menu-content {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    
+    .menu-btn {
+      background: linear-gradient(135deg, var(--ferrari-red), #b91c3c);
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(220, 20, 60, 0.3);
+      min-width: 140px;
+    }
+    
+    .menu-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(220, 20, 60, 0.4);
+      background: linear-gradient(135deg, #e11d48, var(--ferrari-red));
+    }
+    
+    .menu-btn:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 8px rgba(220, 20, 60, 0.3);
+    }
+    
+    @media (max-width: 480px) {
+      #game-menu {
+        top: 10px;
+        right: 10px;
+        padding: 12px;
+      }
+      
+      .menu-btn {
+        padding: 10px 16px;
+        font-size: 13px;
+        min-width: 120px;
+      }
+    }
+  `;
+  
+  document.head.appendChild(style);
+  document.body.appendChild(menu);
+}
+
+function startNewGame() {
+  // Reset game state
+  state.currentRow = 0;
+  state.currentCol = 0;
+  state.gameOver = false;
+  state.grid = Array.from({ length: CONFIG.maxGuesses }, () => Array(CONFIG.wordLength).fill(""));
+  state.statuses = new Map();
+  state.solution = pickSolution();
+  
+  // Clear the board
+  board.innerHTML = "";
+  
+  // Recreate the board
+  for (let row = 0; row < CONFIG.maxGuesses; row++) {
+    for (let col = 0; col < CONFIG.wordLength; col++) {
+      const tile = document.createElement("div");
+      tile.className = "tile";
+      tile.dataset.row = row;
+      tile.dataset.col = col;
+      board.appendChild(tile);
+    }
+  }
+  
+  // Show hint and keyboard again
+  const hint = document.getElementById('hint');
+  const keyboard = document.getElementById('keyboard');
+  if (hint) hint.style.display = 'block';
+  if (keyboard) keyboard.style.display = 'block';
+  
+  // Remove celebration effects
+  document.body.classList.remove("celebrate");
+  
+  // Clear floating photos
+  try {
+    const photos = window._floatingPhotos || [];
+    photos.forEach((state) => {
+      if (state.wrap) state.wrap.remove();
+    });
+    window._floatingPhotos = [];
+    window._floatingPhotoLoop = false;
+  } catch {}
+  
+  // Remove menu
+  const menu = document.getElementById('game-menu');
+  if (menu) menu.remove();
+  
+  // Reset keyboard colors
+  updateKeyboardStatuses(new Map());
+}
+
+function startBounceGame() {
+  // Remove the menu first
+  const menu = document.getElementById('game-menu');
+  if (menu) menu.remove();
+  
+  // Find a random floating photo to start the bounce game with
+  const photos = window._floatingPhotos || [];
+  if (photos.length === 0) {
+    // If no photos exist, create them first
+    createFloatingPhotos();
+    setTimeout(() => {
+      const newPhotos = window._floatingPhotos || [];
+      if (newPhotos.length > 0) {
+        const randomPhoto = newPhotos[Math.floor(Math.random() * newPhotos.length)];
+        startPhotoPaddleGame(randomPhoto);
+      }
+    }, 100);
+  } else {
+    // Use existing photo
+    const randomPhoto = photos[Math.floor(Math.random() * photos.length)];
+    startPhotoPaddleGame(randomPhoto);
+  }
+}
+
+// Firebase Leaderboard system
+async function saveScore(score) {
+  try {
+    const playerName = getPlayerName();
+    const newScore = {
+      name: playerName,
+      score: score,
+      date: new Date().toLocaleDateString(),
+      timestamp: Date.now()
+    };
+    
+    // Try Firebase first
+    if (window.firebaseDB) {
+      await window.firebaseAddDoc(
+        window.firebaseCollection(window.firebaseDB, "leaderboard"), 
+        newScore
+      );
+      console.log('Score saved to Firebase');
+    } else {
+      // Fallback to localStorage if Firebase not available
+      const scores = await getLeaderboard();
+      scores.push(newScore);
+      scores.sort((a, b) => b.score - a.score);
+      scores.splice(10);
+      localStorage.setItem('bounceGameLeaderboard', JSON.stringify(scores));
+      console.log('Score saved to localStorage (Firebase not available)');
+    }
+  } catch (e) {
+    console.warn('Could not save score:', e);
+    // Fallback to localStorage on Firebase error
+    try {
+      const scores = await getLeaderboard();
+      scores.push({
+        name: getPlayerName(),
+        score: score,
+        date: new Date().toLocaleDateString(),
+        timestamp: Date.now()
+      });
+      scores.sort((a, b) => b.score - a.score);
+      scores.splice(10);
+      localStorage.setItem('bounceGameLeaderboard', JSON.stringify(scores));
+    } catch (localError) {
+      console.error('Failed to save score anywhere:', localError);
+    }
+  }
+}
+
+async function getLeaderboard() {
+  try {
+    // Try Firebase first
+    if (window.firebaseDB) {
+      const q = window.firebaseQuery(
+        window.firebaseCollection(window.firebaseDB, "leaderboard"),
+        window.firebaseOrderBy("score", "desc"),
+        window.firebaseLimit(10)
+      );
+      const querySnapshot = await window.firebaseGetDocs(q);
+      const firebaseScores = querySnapshot.docs.map(doc => doc.data());
+      
+      if (firebaseScores.length > 0) {
+        return firebaseScores;
+      }
+    }
+    
+    // Fallback to localStorage
+    const stored = localStorage.getItem('bounceGameLeaderboard');
+    return stored ? JSON.parse(stored) : [];
+  } catch (e) {
+    console.warn('Error getting leaderboard:', e);
+    // Final fallback to localStorage
+    try {
+      const stored = localStorage.getItem('bounceGameLeaderboard');
+      return stored ? JSON.parse(stored) : [];
+    } catch (localError) {
+      return [];
+    }
+  }
+}
+
+function getPlayerName() {
+  try {
+    let name = localStorage.getItem('bounceGamePlayerName');
+    if (!name) {
+      name = prompt('Enter your name for the leaderboard:') || 'Anonymous';
+      localStorage.setItem('bounceGamePlayerName', name);
+    }
+    return name;
+  } catch (e) {
+    return 'Anonymous';
+  }
+}
+
+async function showLeaderboard() {
+  const scores = await getLeaderboard();
+  const popup = document.createElement("div");
+  popup.className = "leaderboard-popup";
+  
+  let scoresHtml = '';
+  if (scores.length === 0) {
+    scoresHtml = '<p class="no-scores">No scores yet! Play the bounce game to set a record!</p>';
+  } else {
+    scoresHtml = '<div class="leaderboard-list">';
+    scores.forEach((score, index) => {
+      const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
+      scoresHtml += `
+        <div class="score-entry ${index < 3 ? 'top-three' : ''}">
+          <span class="rank">${medal}</span>
+          <span class="name">${score.name}</span>
+          <span class="score">${score.score}s</span>
+          <span class="date">${score.date}</span>
+        </div>
+      `;
+    });
+    scoresHtml += '</div>';
+  }
+  
+  popup.innerHTML = `
+    <div class="leaderboard-content">
+      <h2>🏆 Leaderboard 🏆</h2>
+      ${scoresHtml}
+      <div class="leaderboard-buttons">
+        <button class="clear-scores-btn" onclick="clearLeaderboard()">Clear Scores</button>
+        <button class="change-name-btn" onclick="changePlayerName()">Change Name</button>
+        <button class="close-btn" onclick="this.parentElement.parentElement.parentElement.remove()">Close</button>
+      </div>
+    </div>
+  `;
+  
+  popup.style.cssText = `
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 4000;
+    backdrop-filter: blur(5px);
+  `;
+  
+  const content = popup.querySelector('.leaderboard-content');
+  content.style.cssText = `
+    background: linear-gradient(135deg, var(--ferrari-black), #2a0a0a);
+    border: 2px solid var(--ferrari-gold);
+    border-radius: 16px;
+    padding: 30px;
+    text-align: center;
+    color: white;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    animation: popup-bounce 0.6s ease-out;
+    max-width: 500px;
+    width: 90vw;
+    max-height: 80vh;
+    overflow-y: auto;
+  `;
+  
+  document.body.appendChild(popup);
+}
+
+function clearLeaderboard() {
+  if (confirm('Are you sure you want to clear all scores?')) {
+    localStorage.removeItem('bounceGameLeaderboard');
+    const popup = document.querySelector('.leaderboard-popup');
+    if (popup) popup.remove();
+    showLeaderboard(); // Refresh the display
+  }
+}
+
+function changePlayerName() {
+  const newName = prompt('Enter your new name:');
+  if (newName && newName.trim()) {
+    localStorage.setItem('bounceGamePlayerName', newName.trim());
+    alert(`Name changed to: ${newName.trim()}`);
+  }
+}
+
+function showPlayAgainPopup() {
+  const popup = document.createElement("div");
+  popup.className = "play-again-popup";
+  popup.innerHTML = `
+    <div class="play-again-content">
+      <h2>😬 Ewwwww, Try again 😬</h2>
+      <button class="play-again-btn" onclick="this.parentElement.parentElement.remove(); startNewGame()">
+        🎮 Play Again
+      </button>
+    </div>
+  `;
+  
+  popup.style.cssText = `
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 4000;
+    backdrop-filter: blur(5px);
+  `;
+  
+  const content = popup.querySelector('.play-again-content');
+  content.style.cssText = `
+    background: linear-gradient(135deg, var(--ferrari-black), #2a0a0a);
+    border: 2px solid var(--ferrari-gold);
+    border-radius: 16px;
+    padding: 30px;
+    text-align: center;
+    color: white;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    animation: popup-bounce 0.6s ease-out;
+    max-width: 400px;
+    width: 90vw;
+  `;
+  
+  // Auto-dismiss after 10 seconds if no interaction
+  setTimeout(() => {
+    if (popup.parentElement) {
+      popup.remove();
+      startNewGame();
+    }
+  }, 10000);
+  
+  document.body.appendChild(popup);
 }
 
 function populateReveal() {
@@ -898,7 +1588,7 @@ function populateReveal() {
   revealVideoContainer.innerHTML = ""; // Video now handled separately
 }
 
-function lightUpLetters() {
+function lightUpLetters(callback) {
   const message = "HAPPY BIRTHDAY VANS";
   const letters = message.split("");
   
@@ -926,9 +1616,14 @@ function lightUpLetters() {
           key.style.animation = "";
         }, 750);
       }
-    }, index * 80); // faster pacing
+    }, index * 200); // slower pacing
   });
-  // Photos start immediately; no additional delay here
+  
+  // Call callback after all letters are done
+  if (callback) {
+    const totalDuration = letters.length * 200 + 750; // animation time + last letter effect
+    setTimeout(callback, totalDuration);
+  }
 }
 
 function restructureGridForMessage(message) {
@@ -1047,13 +1742,26 @@ function lightUpGridTileByLetter(letter) {
 function winSequence() {
   state.gameOver = true;
   showToast("🏎️ Checkered flag! 🏁");
+  
+  // Hide hint and keyboard after game is over
+  const hint = document.getElementById('hint');
+  const keyboard = document.getElementById('keyboard');
+  if (hint) hint.style.display = 'none';
+  if (keyboard) keyboard.style.display = 'none';
+  
   setTimeout(() => {
     document.body.classList.add("celebrate");
     playBirthdayJingle();
     startConfetti(6000);
-    // Start photos immediately, then light up letters rapidly
-    createFloatingPhotos();
-    setTimeout(() => { lightUpLetters(); }, 400);
+    // Light up letters first, then start photos after completion
+    setTimeout(() => { 
+      lightUpLetters(() => {
+        // Callback: start photos after letters are done
+        setTimeout(() => {
+          createFloatingPhotos();
+        }, 500);
+      });
+    }, 400);
     
     // After photos animate for 7s, crossfade to surprise overlay
     setTimeout(() => {

@@ -2,7 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1a1a1a">
     <title>wordle-time</title>
     <meta name="description" content="A custom Wordle-style game that becomes a birthday surprise." />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -49,6 +52,35 @@
 
     <canvas id="confetti" class="confetti" aria-hidden="true"></canvas>
 
+    <!-- Firebase SDK -->
+    <script type="module">
+      // Import the functions you need from the SDKs you need
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+      import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+
+      // Your web app's Firebase configuration
+      const firebaseConfig = {
+        apiKey: "AIzaSyAKLFmlpn4-4TrVAuPHG0efoNrHivGLqHE",
+        authDomain: "birthday-wordle-leaderboard.firebaseapp.com",
+        projectId: "birthday-wordle-leaderboard",
+        storageBucket: "birthday-wordle-leaderboard.firebasestorage.app",
+        messagingSenderId: "1061290068449",
+        appId: "1:1061290068449:web:8293cff16a3abd7d43eaa0"
+      };
+
+      // Initialize Firebase
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+
+      // Make Firebase functions available globally
+      window.firebaseDB = db;
+      window.firebaseCollection = collection;
+      window.firebaseAddDoc = addDoc;
+      window.firebaseQuery = query;
+      window.firebaseOrderBy = orderBy;
+      window.firebaseLimit = limit;
+      window.firebaseGetDocs = getDocs;
+    </script>
     <script src="script.js" defer></script>
   </body>
   </html>
