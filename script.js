@@ -347,104 +347,466 @@ function startConfetti(durationMs = 5000) {
 }
 
 function createFloatingPhotos() {
-  const photos = [];
-  const animations = [
-    'float-around-full',
-    'spiral-dance',
-    'bounce-zoom',
-    'wave-motion',
-    'zigzag-dance',
-    'orbit-motion'
+  const wrappers = [];
+  const tiltAnimations = [
+    'threeD-tilt-a',
+    'threeD-tilt-b',
+    'threeD-tilt-c',
+    'threeD-tilt-d'
   ];
+  // Build a larger pool of unique click effects and shuffle assignment
+  const baseEffects = [
+    (el, v, strongGlow, softGlow) => { el.style.animation = 'none'; el.style.transition = 'transform 1.1s cubic-bezier(0.19,1,0.22,1), box-shadow 1.1s'; el.style.transform = `scale(${1.7+v}) rotate(${360+180*v}deg)`; el.style.boxShadow = `0 0 80px ${strongGlow}, 0 0 140px ${softGlow}`; },
+    (el, v, strongGlow, softGlow) => { el.style.animation = 'none'; el.style.transition = 'transform 1s ease, box-shadow 1s'; el.style.transform = `rotateY(${540+90*v}deg) scale(${1.5+0.2*v})`; el.style.boxShadow = `0 0 80px ${strongGlow}, 0 0 140px ${softGlow}`; },
+    (el, v, strongGlow, softGlow) => { el.style.animation = 'none'; el.style.transition = 'transform 900ms cubic-bezier(0.34,1.56,0.64,1), box-shadow 900ms'; el.style.transform = `translate(${(-30+60*v)}px, -50px) scale(${1.8+0.1*v})`; el.style.boxShadow = `0 0 90px ${strongGlow}, 0 0 150px ${softGlow}`; },
+    (el, v, strongGlow, softGlow) => { el.style.animation = 'none'; el.style.transition = 'transform 1.1s ease, filter 1.1s, box-shadow 1.1s'; el.style.transform = `rotate(${540+180*v}deg) skew(${4+2*v}deg, ${4+2*v}deg) scale(${1.7+0.1*v})`; el.style.filter = 'saturate(1.4)'; el.style.boxShadow = `0 0 100px ${strongGlow}, 0 0 160px ${softGlow}`; },
+    (el, v, strongGlow, softGlow) => { el.style.animation = 'none'; el.style.transition = 'transform 1s ease, box-shadow 1s'; el.style.transform = `perspective(700px) rotateX(${20+10*v}deg) rotateY(${20+10*v}deg) scale(${1.75+0.1*v})`; el.style.boxShadow = `0 20px 90px rgba(0,0,0,0.5), 0 0 100px ${strongGlow}`; },
+    (el, v, strongGlow, softGlow) => { el.style.animation = 'none'; el.style.transition = 'transform 1s ease, box-shadow 1s'; el.style.transform = `translate(${(-60+120*v)}px, ${-20+30*v}px) rotate(${300+60*v}deg) scale(${1.6+0.2*v})`; el.style.boxShadow = `0 0 95px ${strongGlow}, 0 0 150px ${softGlow}`; }
+  ];
+  const effectOrder = [];
+  const total = CONFIG.galleryImages.length;
+  while (effectOrder.length < total) {
+    for (let i = 0; i < baseEffects.length && effectOrder.length < total; i++) effectOrder.push(i);
+  }
+  // Fisher-Yates shuffle for uniqueness across photos
+  for (let i = effectOrder.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [effectOrder[i], effectOrder[j]] = [effectOrder[j], effectOrder[i]];
+  }
   CONFIG.galleryImages.forEach((src, index) => {
     const img = document.createElement("img");
     img.src = src;
     img.alt = `${CONFIG.friendName} photo`;
     img.className = "floating-photo";
-    
-    const size = 140;
+    // Device-adaptive sizing
+    const viewportMin = Math.min(window.innerWidth, window.innerHeight);
+    const size = Math.max(110, Math.min(180, Math.floor(viewportMin / 5)));
     const leftPos = Math.max(0, Math.random() * (window.innerWidth - size));
     const topPos = Math.max(0, Math.random() * (window.innerHeight - size));
+    // Randomized glow colors (HSL-based with alpha)
+    const hue = Math.floor(Math.random() * 360);
+    const strongGlow = `hsla(${hue} 100% 60% / 1)`;
+    const softGlow = `hsla(${(hue + 30) % 360} 100% 60% / 0.6)`;
     
-    const animation = animations[Math.floor(Math.random() * animations.length)];
-    const duration = 9 + Math.random() * 6; // 9-15s
-    const delay = Math.random() * 0.4; // tiny stagger
+    const tiltAnim = tiltAnimations[Math.floor(Math.random() * tiltAnimations.length)];
+    const duration = 10 + Math.random() * 8; // unused for path now
+    const delay = Math.random() * 0.6; // tiny stagger for tilt/glow
+    const tiltDuration = 6 + Math.random() * 5; // 6-11s tilt
     
-    img.style.cssText = `
+    // Create wrapper to carry path transform so image tilt can compose in 3D
+    const wrap = document.createElement('div');
+    wrap.className = 'floating-photo-wrap';
+    wrap.style.cssText = `
       position: fixed;
+      left: 0px;
+      top: 0px;
       width: ${size}px;
       height: ${size}px;
+      z-index: 1000;
+      pointer-events: auto;
+      will-change: transform;
+      transform: translate3d(${leftPos}px, ${topPos}px, 0);
+      transform-style: preserve-3d;
+      --ph-size: ${size}px;
+    `;
+
+    img.style.cssText = `
+      width: 100%;
+      height: 100%;
       object-fit: cover;
       border-radius: 50%;
       border: 4px solid var(--ferrari-gold);
-      box-shadow: 0 0 25px rgba(255, 215, 0, 0.8), 0 0 50px rgba(220, 20, 60, 0.4);
-      z-index: 1000;
-      pointer-events: auto;
-      left: ${leftPos}px;
-      top: ${topPos}px;
-      animation: ${animation} ${duration}s cubic-bezier(0.25, 0.1, 0.25, 1) infinite;
-      animation-delay: ${delay}s;
+      box-shadow: 0 0 25px ${softGlow}, 0 0 50px ${strongGlow};
       cursor: pointer;
+      will-change: transform, box-shadow;
+      transform-style: preserve-3d;
+      animation: photo-glow 3s ease-in-out infinite, photo-bounce 2s ease-in-out infinite, ${tiltAnim} ${tiltDuration}s ease-in-out infinite alternate;
+      animation-delay: ${delay}s;
     `;
-    
-    // Unique click animations per photo
-    const clickEffects = [
-      (el) => { el.style.animation = 'none'; el.style.transition = 'transform 1.1s cubic-bezier(0.19,1,0.22,1), box-shadow 1.1s'; el.style.transform = 'scale(1.85) rotate(540deg)'; el.style.boxShadow = '0 0 70px rgba(255, 215, 0, 1), 0 0 120px rgba(220, 20, 60, 0.8)'; },
-      (el) => { el.style.animation = 'none'; el.style.transition = 'transform 1s ease, box-shadow 1s'; el.style.transform = 'rotateY(540deg) scale(1.7)'; el.style.boxShadow = '0 0 70px rgba(255, 215, 0, 1), 0 0 120px rgba(220, 20, 60, 0.8)'; },
-      (el) => { el.style.animation = 'none'; el.style.transition = 'transform 900ms cubic-bezier(0.34,1.56,0.64,1), box-shadow 900ms'; el.style.transform = 'translateY(-50px) scale(1.95)'; el.style.boxShadow = '0 0 80px rgba(255, 215, 0, 1), 0 0 140px rgba(220, 20, 60, 0.8)'; },
-      (el) => { el.style.animation = 'none'; el.style.transition = 'transform 1.1s ease, filter 1.1s, box-shadow 1.1s'; el.style.transform = 'rotate(720deg) skew(6deg, 6deg) scale(1.8)'; el.style.filter = 'saturate(1.4)'; el.style.boxShadow = '0 0 90px rgba(255, 215, 0, 1), 0 0 160px rgba(220, 20, 60, 0.8)'; },
-      (el) => { el.style.animation = 'none'; el.style.transition = 'transform 1s ease, box-shadow 1s'; el.style.transform = 'perspective(700px) rotateX(25deg) rotateY(25deg) scale(1.85)'; el.style.boxShadow = '0 20px 90px rgba(0,0,0,0.5), 0 0 90px rgba(255, 215, 0, 1)'; }
-    ];
-    const effect = clickEffects[index % clickEffects.length];
+    // Unique click animations per photo, guaranteed assignment
+    const baseIndex = effectOrder[index] % baseEffects.length;
+    const variant = (index % 3) / 3; // small per-photo variation
+    let isAnimating = false;
     img.addEventListener("click", () => {
-      effect(img);
+      if (isAnimating) return;
+      isAnimating = true;
+      const prevZ = wrap.style.zIndex;
+      wrap.style.zIndex = '2001';
+      // Randomly pick a dramatic effect on click
+      const dramatic = Math.floor(Math.random()*3);
+      if (dramatic === 0) {
+        // Hyper spin
+        img.style.animation = 'none';
+        img.style.transition = 'transform 900ms cubic-bezier(0.34,1.56,0.64,1), box-shadow 900ms';
+        img.style.transform = 'scale(2) rotate(1080deg)';
+        img.style.boxShadow = `0 0 90px ${strongGlow}, 0 0 160px ${softGlow}`;
+      } else if (dramatic === 1) {
+        // Proper fold: flip 0 -> 90, swap, then 90 -> 180
+        img.style.animation = 'none';
+        img.style.backfaceVisibility = 'hidden';
+        img.style.transformStyle = 'preserve-3d';
+        img.style.transition = 'transform 350ms ease';
+        img.style.transform = 'rotateY(90deg)';
+        setTimeout(() => {
+          const nextIdx = (index + 1) % CONFIG.galleryImages.length;
+          img.src = CONFIG.galleryImages[nextIdx];
+          // continue the fold to show opposite side
+          img.style.transition = 'transform 350ms ease';
+          img.style.transform = 'rotateY(180deg)';
+          setTimeout(() => {
+            // reset back to 0 for future folds
+            img.style.transition = 'transform 0ms';
+            img.style.transform = 'rotateY(0deg)';
+          }, 360);
+        }, 360);
+      } else {
+        // Bounce to opposite wall then back, swap image on each contact
+        wrap.style.transition = 'transform 700ms cubic-bezier(0.34,1.56,0.64,1)';
+        const toRight = (parseFloat(wrap.style.left) || 0) < window.innerWidth/2;
+        const targetX = toRight ? (window.innerWidth - size - 10) : 10;
+        const targetY = (parseFloat(wrap.style.top) || 0) < window.innerHeight/2 ? (window.innerHeight - size - 10) : 10;
+        wrap.style.transform = `translate(${targetX - leftPos}px, 0)`;
+        setTimeout(() => {
+          img.src = CONFIG.galleryImages[(index + 1) % CONFIG.galleryImages.length];
+          wrap.style.transform = `translate(${targetX - leftPos}px, ${targetY - topPos}px)`;
+          setTimeout(() => {
+            img.src = CONFIG.galleryImages[(index + 2) % CONFIG.galleryImages.length];
+            wrap.style.transform = 'translate(0, 0)';
+          }, 720);
+        }, 720);
+      }
+      try { baseEffects[baseIndex](img, variant, strongGlow, softGlow); } catch {}
       setTimeout(() => {
-        img.style.animation = `${animation} ${duration}s cubic-bezier(0.25, 0.1, 0.25, 1) infinite`;
+        img.style.animation = `photo-glow 3s ease-in-out infinite, photo-bounce 2s ease-in-out infinite, ${tiltAnim} ${tiltDuration}s ease-in-out infinite alternate`;
         img.style.transform = "";
         img.style.transition = "";
         img.style.filter = "";
-        img.style.boxShadow = "0 0 25px rgba(255, 215, 0, 0.8), 0 0 50px rgba(220, 20, 60, 0.4)";
+        img.style.boxShadow = `0 0 25px ${softGlow}, 0 0 50px ${strongGlow}`;
+        wrap.style.zIndex = prevZ;
+        isAnimating = false;
       }, 1200);
     });
     
-    document.body.appendChild(img);
-    photos.push(img);
+    wrap.appendChild(img);
+    document.body.appendChild(wrap);
+    // Physics state per wrapper
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 140 + Math.random() * 80; // px/s
+    const state = {
+      wrap,
+      img,
+      x: leftPos,
+      y: topPos,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      size,
+      nextIdx: (index + 1) % CONFIG.galleryImages.length
+    };
+    wrappers.push(state);
   });
   
-  // Keep photos animating continuously - no removal
+  // Start physics loop once
+  try {
+    window._floatingPhotos = wrappers;
+    if (!window._floatingPhotoLoop) {
+      window._floatingPhotoLoop = true;
+      startFloatingPhotoBounceLoop();
+    }
+  } catch {}
+}
+
+function startFloatingPhotoBounceLoop() {
+  let last = performance.now();
+  function step(now) {
+    const dt = Math.min(32, now - last) / 1000; // cap delta
+    last = now;
+    const states = window._floatingPhotos || [];
+    const maxX = Math.max(0, window.innerWidth);
+    const maxY = Math.max(0, window.innerHeight);
+    states.forEach((s) => {
+      if (!s || !s.wrap) return;
+      if (s._inGame) return; // skip physics for the active game ball
+      s.x += s.vx * dt;
+      s.y += s.vy * dt;
+      const right = maxX - s.size;
+      const bottom = maxY - s.size;
+      let bounced = false;
+      if (s.x <= 0) { s.x = 0; s.vx = Math.abs(s.vx); bounced = true; }
+      else if (s.x >= right) { s.x = right; s.vx = -Math.abs(s.vx); bounced = true; }
+      if (s.y <= 0) { s.y = 0; s.vy = Math.abs(s.vy); bounced = true; }
+      else if (s.y >= bottom) { s.y = bottom; s.vy = -Math.abs(s.vy); bounced = true; }
+      if (bounced && s.img) {
+        try {
+          s.img.src = CONFIG.galleryImages[s.nextIdx];
+          s.nextIdx = (s.nextIdx + 1) % CONFIG.galleryImages.length;
+        } catch {}
+      }
+      s.wrap.style.transform = `translate3d(${s.x}px, ${s.y}px, 0)`;
+    });
+
+    // Handle photo-photo collisions (elastic, equal mass)
+    for (let i = 0; i < states.length; i++) {
+      const a = states[i];
+      if (!a || !a.wrap) continue;
+      for (let j = i + 1; j < states.length; j++) {
+        const b = states[j];
+        if (!b || !b.wrap) continue;
+        const ax = a.x + a.size / 2;
+        const ay = a.y + a.size / 2;
+        const bx = b.x + b.size / 2;
+        const by = b.y + b.size / 2;
+        const dx = bx - ax;
+        const dy = by - ay;
+        const distSq = dx * dx + dy * dy;
+        const r = (a.size + b.size) / 2;
+        if (distSq > 0 && distSq <= r * r) {
+          const dist = Math.sqrt(distSq) || 0.0001;
+          const nx = dx / dist;
+          const ny = dy / dist;
+          // Relative velocity along normal
+          const rvx = b.vx - a.vx;
+          const rvy = b.vy - a.vy;
+          const rvn = rvx * nx + rvy * ny;
+          if (rvn < 0) {
+            // Elastic collision, equal mass -> swap normal components
+            const impulse = -rvn; // mass terms cancel for equal mass with e=1, split across both
+            const jx = impulse * nx;
+            const jy = impulse * ny;
+            a.vx -= jx;
+            a.vy -= jy;
+            b.vx += jx;
+            b.vy += jy;
+            // Positional correction to resolve overlap
+            const overlap = r - dist + 0.5; // small slop
+            const corrX = nx * overlap * 0.5;
+            const corrY = ny * overlap * 0.5;
+            a.x -= corrX;
+            a.y -= corrY;
+            b.x += corrX;
+            b.y += corrY;
+            // Swap images on contact
+            try {
+              if (a.img) { a.img.src = CONFIG.galleryImages[a.nextIdx]; a.nextIdx = (a.nextIdx + 1) % CONFIG.galleryImages.length; }
+              if (b.img) { b.img.src = CONFIG.galleryImages[b.nextIdx]; b.nextIdx = (b.nextIdx + 1) % CONFIG.galleryImages.length; }
+            } catch {}
+          }
+        }
+      }
+    }
+    requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+// Turn a clicked photo into a mini game (breakout-like single paddle)
+function enablePhotoBounceGameClicks() {
+  try {
+    const states = window._floatingPhotos || [];
+    states.forEach((s) => {
+      if (!s || !s.img || s._gameBound) return;
+      s._gameBound = true;
+      s.img.addEventListener('click', () => startPhotoPaddleGame(s));
+    });
+  } catch {}
+}
+
+function startPhotoPaddleGame(state) {
+  const wrap = state.wrap;
+  const img = state.img;
+  if (!wrap || !img) return;
+  state._inGame = true;
+  // Bring game layer to top
+  const prevZ = wrap.style.zIndex;
+  wrap.style.zIndex = '3000';
+  // Hide other photos entirely
+  try {
+    (window._floatingPhotos || []).forEach((s) => { if (s !== state) { const w = s.wrap; if (w) w.style.display = 'none'; } });
+  } catch {}
+
+  // Create paddle
+  const paddle = document.createElement('div');
+  const paddleWidth = Math.max(80, Math.min(160, Math.floor(window.innerWidth * 0.24)));
+  const paddleHeight = 14;
+  paddle.style.cssText = `
+    position: fixed;
+    left: ${(window.innerWidth - paddleWidth) / 2}px;
+    top: ${window.innerHeight - 28}px;
+    width: ${paddleWidth}px;
+    height: ${paddleHeight}px;
+    background: linear-gradient(90deg, var(--ferrari-gold), #fff59e);
+    border-radius: 8px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+    z-index: 3500;
+  `;
+  document.body.appendChild(paddle);
+
+  // Control paddle with mouse/touch and arrow keys
+  let paddleX = (window.innerWidth - paddleWidth) / 2;
+  function setPaddle(x) {
+    paddleX = Math.max(0, Math.min(window.innerWidth - paddleWidth, x));
+    paddle.style.left = `${paddleX}px`;
+  }
+  function onMove(e) {
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    setPaddle(clientX - paddleWidth / 2);
+  }
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('touchmove', onMove, { passive: true });
+  function onKey(e) {
+    const step = 28;
+    if (e.key === 'ArrowLeft') setPaddle(paddleX - step);
+    else if (e.key === 'ArrowRight') setPaddle(paddleX + step);
+  }
+  window.addEventListener('keydown', onKey);
+
+  // Ball uses the clicked photo wrapper
+  let x = state.x;
+  let y = state.y;
+  let vx = Math.sign(state.vx || 1) || 1;
+  let vy = Math.sign(state.vy || 1) || 1;
+  let speed = Math.max(220, Math.hypot(state.vx, state.vy));
+  const size = state.size;
+  let lastSwap = 0;
+  let running = true;
+  let lastX = x, lastY = y;
+  let score = 0;
+
+  // Score UI
+  const scoreEl = document.createElement('div');
+  scoreEl.style.cssText = `
+    position: fixed; top: max(8px, env(safe-area-inset-top)); right: max(8px, env(safe-area-inset-right));
+    z-index: 3600; color: var(--ferrari-gold); font-weight: 800; font-size: 14px;
+    background: rgba(0,0,0,0.45); padding: 6px 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.15);
+  `;
+  scoreEl.textContent = 'Score: 0';
+  document.body.appendChild(scoreEl);
+
+  function gameStep(t) {
+    if (!running) return;
+    const dt = 1 / 60; // fixed timestep for stable gameplay
+    for (let i = 0; i < 1; i++) {
+      x += vx * speed * dt;
+      y += vy * speed * dt;
+      // Distance increment for score
+      const dx = x - lastX; const dy = y - lastY;
+      const d = Math.hypot(dx, dy);
+      score += d * 10; // 10x distance
+      lastX = x; lastY = y;
+      scoreEl.textContent = `Score: ${Math.floor(score)}`;
+      const right = window.innerWidth - size;
+      const bottom = window.innerHeight - size;
+      // Wall collisions (top/left/right reflect, bottom loses unless paddle hit)
+      if (x <= 0) { x = 0; vx = Math.abs(vx); speed *= 1.04; swapImage(); }
+      else if (x >= right) { x = right; vx = -Math.abs(vx); speed *= 1.04; swapImage(); }
+      if (y <= 0) { y = 0; vy = Math.abs(vy); speed *= 1.04; swapImage(); }
+
+      // Paddle collision
+      const paddleTop = window.innerHeight - 28;
+      if (y + size >= paddleTop && y + size <= paddleTop + paddleHeight) {
+        const center = x + size / 2;
+        if (center >= paddleX && center <= paddleX + paddleWidth) {
+          y = paddleTop - size;
+          // Reflect with angle based on hit position
+          const hitPos = (center - paddleX) / paddleWidth - 0.5; // -0.5..0.5
+          const angle = hitPos * (Math.PI / 2.5); // spread
+          const speedMag = speed * 1.07; // increase after paddle bounce
+          vx = Math.sin(angle) * speedMag / speed;
+          vy = -Math.cos(angle) * speedMag / speed;
+          speed = speedMag;
+          swapImage();
+        }
+      }
+
+      // Missed paddle -> end game
+      if (y > bottom + 24) {
+        endGame(false);
+        return;
+      }
+    }
+    // Apply transform
+    wrap.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+    requestAnimationFrame(gameStep);
+  }
+  requestAnimationFrame(gameStep);
+
+  function swapImage() {
+    const now = performance.now();
+    if (now - lastSwap < 120) return; // throttle
+    lastSwap = now;
+    try {
+      img.src = CONFIG.galleryImages[state.nextIdx];
+      state.nextIdx = (state.nextIdx + 1) % CONFIG.galleryImages.length;
+    } catch {}
+  }
+
+  function endGame(won) {
+    running = false;
+    // Restore other photos
+    try { (window._floatingPhotos || []).forEach((s) => { const w = s.wrap; if (w) { w.style.display = ''; w.style.opacity = '1'; } }); } catch {}
+    // Remove paddle and listeners
+    try { paddle.remove(); } catch {}
+    try { scoreEl.remove(); } catch {}
+    window.removeEventListener('mousemove', onMove);
+    window.removeEventListener('touchmove', onMove);
+    window.removeEventListener('keydown', onKey);
+    // Restore this photo to physics pool with current position/velocity upward
+    state.x = Math.max(0, Math.min(window.innerWidth - size, x));
+    state.y = Math.max(0, Math.min(window.innerHeight - size, y));
+    state.vx = vx * speed; // convert back to px/s
+    state.vy = vy * speed;
+    wrap.style.zIndex = prevZ;
+    state._inGame = false;
+  }
 }
 
 function showSurprisePopup() {
   const popup = document.createElement("div");
   popup.className = "surprise-popup";
   popup.innerHTML = `
-    <div class="surprise-content">
-      <h3>🎉 Click here for surprise! 🎉</h3>
-      <p>Special birthday video awaits!</p>
+    <div class=\"surprise-content\" style=\"position: relative; display: inline-block;\">
+      <img src=\"https://wallpapers.com/images/hd/charles-leclerc-pointing-up-f1b0dmr96gkgfeoa.jpg\" alt=\"Surprise\" style=\"display:block; width:min(92vw, 540px); height:auto; border-radius:12px;\" />
+      <button type=\"button\" class=\"surprise-badge\" style=\"position:absolute; top:8px; left:50%; transform:translateX(-50%); background: rgba(0,0,0,0.55); color:#fff; padding:8px 12px; border-radius:10px; font-weight:800; font-size:12px; letter-spacing:0.02em; border:none; cursor:pointer; box-shadow: 0 0 14px var(--ferrari-red), 0 0 28px rgba(220,20,60,0.5);\">click here for the surprise</button>
     </div>
   `;
   popup.style.cssText = `
     position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: linear-gradient(135deg, var(--ferrari-red), var(--ferrari-gold));
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     color: white;
-    padding: 30px;
-    border-radius: 20px;
+    padding: 0;
+    border-radius: 0;
     text-align: center;
-    cursor: pointer;
     z-index: 2000;
-    box-shadow: 0 0 30px rgba(220, 20, 60, 0.8);
-    animation: pulse-glow 2s ease-in-out infinite;
+    box-shadow: 0 0 0 rgba(0,0,0,0);
+    opacity: 0;
+    transition: opacity 1400ms ease;
   `;
   
-  popup.addEventListener("click", () => {
+  // Ferrari red glow pulse on badge
+  const badge = popup.querySelector('.surprise-badge');
+  let glowUp = true;
+  const glowTimer = setInterval(() => {
+    if (!badge) return;
+    if (glowUp) {
+      badge.style.boxShadow = '0 0 20px var(--ferrari-red), 0 0 40px rgba(220,20,60,0.7)';
+    } else {
+      badge.style.boxShadow = '0 0 10px var(--ferrari-red), 0 0 20px rgba(220,20,60,0.5)';
+    }
+    glowUp = !glowUp;
+  }, 600);
+
+  // Only the badge opens the video
+  badge.addEventListener("click", (e) => {
+    e.stopPropagation();
+    clearInterval(glowTimer);
     popup.remove();
     showVideoModal();
   });
   
   document.body.appendChild(popup);
+  return popup;
 }
 
 function showVideoModal() {
@@ -507,6 +869,15 @@ function showVideoModal() {
       // Small timeout to fully detach, then restore original src for next open
       setTimeout(() => { try { vimeoIframe.setAttribute('src', src || ''); } catch {} }, 0);
     }
+    // Restore floating photos to full opacity post-video
+    try {
+      const states = window._floatingPhotos || [];
+      states.forEach((state) => {
+        const wrap = state.wrap || state;
+        if (wrap && wrap.style) wrap.style.opacity = '1';
+      });
+      enablePhotoBounceGameClicks();
+    } catch {}
     restoreBodyScroll();
     videoModal.remove();
   });
@@ -684,10 +1055,35 @@ function winSequence() {
     createFloatingPhotos();
     setTimeout(() => { lightUpLetters(); }, 400);
     
-    // Show surprise popup at the very end (after all animations)
+    // After photos animate for 7s, crossfade to surprise overlay
     setTimeout(() => {
-      showSurprisePopup();
-    }, 20000); // Much later - after letter lighting + photos + confetti
+      try {
+        const photos = window._floatingPhotos || [];
+        const overlay = showSurprisePopup();
+        if (overlay) {
+          requestAnimationFrame(() => { overlay.style.opacity = '0'; });
+          // start crossfade
+          photos.forEach((state) => {
+            const wrap = state.wrap || state; 
+            wrap.style.transition = 'opacity 1400ms ease';
+            wrap.style.opacity = '0.35';
+          });
+          setTimeout(() => { try { overlay.style.opacity = '1'; } catch {} }, 20);
+          // Keep photo wrappers after popup so they continue animating behind
+        } else {
+          photos.forEach((state) => {
+            const wrap = state.wrap || state;
+            wrap.style.transition = 'opacity 1400ms ease';
+            wrap.style.opacity = '0.35';
+          });
+          setTimeout(() => {
+            showSurprisePopup();
+          }, 1420);
+        }
+      } catch {
+        showSurprisePopup();
+      }
+    }, 7000);
   }, 800);
 }
 
