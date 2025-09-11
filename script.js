@@ -280,6 +280,50 @@ function playKeyboardSound() {
   oscillator.stop(audioContext.currentTime + 0.1);
 }
 
+// Add game sound effects
+function playGameSound(type) {
+  try {
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    
+    if (type === 'bounce') {
+      // Ball bounce sound
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+      oscillator.frequency.exponentialRampToValueAtTime(400, audioContext.currentTime + 0.1);
+      oscillator.type = 'square';
+      
+      gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.1);
+    } else if (type === 'paddle') {
+      // Paddle hit sound
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.setValueAtTime(600, audioContext.currentTime);
+      oscillator.type = 'sawtooth';
+      
+      gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.15);
+    }
+  } catch (e) {
+    // Silently fail if audio context not available
+  }
+}
+
 // Birthday jingle sound
 function playBirthdayJingle() {
   const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -620,12 +664,12 @@ function startFloatingPhotoBounceLoop() {
       const right = maxX - s.size;
       const bottom = maxY - s.size;
       let bounced = false;
-      
-      if (s.x <= 0) { s.x = 0; s.vx = Math.abs(s.vx); bounced = true; }
-      else if (s.x >= right) { s.x = right; s.vx = -Math.abs(s.vx); bounced = true; }
-      if (s.y <= 0) { s.y = 0; s.vy = Math.abs(s.vy); bounced = true; }
+
+      if (s.x <= 0) { s.x = 0; s.vx = Math.abs(s.vx); swapImage(); playGameSound('bounce'); }
+      if (s.x >= right) { s.x = right; s.vx = -Math.abs(s.vx); swapImage(); playGameSound('bounce'); }
+      if (s.y <= 0) { s.y = 0; s.vy = Math.abs(s.vy); swapImage(); playGameSound('bounce'); }
       else if (s.y >= bottom) { s.y = bottom; s.vy = -Math.abs(s.vy); bounced = true; }
-      
+
       if (bounced && s.img) {
         try {
           s.img.src = CONFIG.galleryImages[s.nextIdx];
@@ -701,17 +745,23 @@ function enablePhotoBounceGameClicks() {
       // Add click handler
       s.img.addEventListener('click', () => startPhotoPaddleGame(s));
       
-      // Add double tap handler for mobile
-      let lastTap = 0;
-      s.img.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        const currentTime = new Date().getTime();
-        const tapLength = currentTime - lastTap;
-        if (tapLength < 500 && tapLength > 0) {
-          // Double tap detected
+      // Add double tap handler for mobile with better detection
+      let tapCount = 0;
+      let tapTimer = null;
+      
+      s.img.addEventListener('touchstart', (e) => {
+        tapCount++;
+        if (tapCount === 1) {
+          tapTimer = setTimeout(() => {
+            tapCount = 0; // Reset if no second tap
+          }, 300);
+        } else if (tapCount === 2) {
+          clearTimeout(tapTimer);
+          tapCount = 0;
+          e.preventDefault();
+          e.stopPropagation();
           startPhotoPaddleGame(s);
         }
-        lastTap = currentTime;
       });
     });
   } catch {}
@@ -898,6 +948,7 @@ function startPhotoPaddleGame(state) {
         vy = -Math.cos(angle) * speedMag / speed;
         speed = speedMag;
         swapImage();
+        playGameSound('paddle');
       }
     }
 
@@ -1080,11 +1131,8 @@ function showGameOverPopup(finalScore) {
 }
 
 function getScoreMessage(score) {
-  if (score >= 60) return "🏆 Legendary Survivor! 🏆";
-  if (score >= 45) return "🌟 Amazing Reflexes! 🌟";
-  if (score >= 30) return "🎯 Great Skills! 🎯";
-  if (score >= 20) return "👍 Nice Endurance! 👍";
-  if (score >= 10) return "🎮 Good Effort! 🎮";
+  if (score >= 30) return "🎉 Yayyyyy! 🎉";
+  if (score >= 15) return "👍 Do better! 👍";
   return "😬 Ewwwwww 😬";
 }
 
@@ -1148,7 +1196,7 @@ function showVideoModal() {
         ${CONFIG.videoEmbedHtml}
       </div>
       <menu>
-        <button class="btn close-video-btn">Close</button>
+        <button class="btn close-video-btn" style="background: #ffd700; color: #000; border: 2px solid #ffd700;">Close</button>
       </menu>
     </form>
   `;
@@ -1199,6 +1247,19 @@ function showVideoModal() {
     restoreBodyScroll();
     videoModal.remove();
     
+    // Restore photo opacity immediately after video popup is closed
+    try {
+      (window._floatingPhotos || []).forEach((s) => {
+        const w = s.wrap;
+        if (w) {
+          w.style.opacity = '1';
+        }
+        if (s.img) {
+          s.img.style.opacity = '1';
+        }
+      });
+    } catch {}
+  
     // Show menu after video popup is closed
     showGameMenu();
   };
