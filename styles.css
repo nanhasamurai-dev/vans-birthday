@@ -171,11 +171,11 @@ body {
   }
   
   .key {
-    height: 54px;
-    min-width: 38px;
-    font-size: 12px;
+    height: 44px;
+    min-width: 30px;
+    font-size: 11px;
     font-weight: bold;
-    padding: 0 4px;
+    padding: 0 3px;
     border-radius: 4px;
     background: #818384;
     color: white;
@@ -183,8 +183,8 @@ body {
   }
   
   .key--wide {
-    min-width: 58px;
-    font-size: 11px;
+    min-width: 46px;
+    font-size: 10px;
   }
 }
 .keyboard-row {
@@ -1087,11 +1087,11 @@ body.celebrate .key--present {
   }
   
   .key {
-    height: 58px;
-    min-width: 43px;
-    font-size: 13px;
+    height: 48px;
+    min-width: 32px;
+    font-size: 12px;
     font-weight: bold;
-    padding: 0 6px;
+    padding: 0 4px;
     border-radius: 4px;
     background: #818384;
     color: white;
@@ -1099,8 +1099,8 @@ body.celebrate .key--present {
   }
   
   .key--wide {
-    min-width: 65px;
-    font-size: 12px;
+    min-width: 50px;
+    font-size: 11px;
   }
   
   /* Birthday message scaling */
@@ -1165,18 +1165,18 @@ body.celebrate .key--present {
   }
   
   .key { 
-    height: 50px; 
-    min-width: 34px; 
-    font-size: 11px; 
+    height: 42px; 
+    min-width: 28px; 
+    font-size: 10px; 
     font-weight: bold;
-    padding: 0 3px;
+    padding: 0 2px;
     background: #818384;
     color: white;
     border: none;
   }
   
   .key--wide { 
-    min-width: 52px; 
-    font-size: 10px; 
+    min-width: 42px; 
+    font-size: 9px; 
   }
 }

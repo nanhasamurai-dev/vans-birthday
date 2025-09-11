@@ -697,7 +697,22 @@ function enablePhotoBounceGameClicks() {
     states.forEach((s) => {
       if (!s || !s.img || s._gameBound) return;
       s._gameBound = true;
+      
+      // Add click handler
       s.img.addEventListener('click', () => startPhotoPaddleGame(s));
+      
+      // Add double tap handler for mobile
+      let lastTap = 0;
+      s.img.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        const currentTime = new Date().getTime();
+        const tapLength = currentTime - lastTap;
+        if (tapLength < 500 && tapLength > 0) {
+          // Double tap detected
+          startPhotoPaddleGame(s);
+        }
+        lastTap = currentTime;
+      });
     });
   } catch {}
 }
@@ -758,11 +773,12 @@ function startPhotoPaddleGame(state) {
     paddle.style.left = `${paddleX}px`;
   }
   function onMove(e) {
+    e.preventDefault();
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     setPaddle(clientX - paddleWidth / 2);
   }
   window.addEventListener('mousemove', onMove);
-  window.addEventListener('touchmove', onMove, { passive: true });
+  window.addEventListener('touchmove', onMove, { passive: false });
   function onKey(e) {
     const step = 28;
     if (e.key === 'ArrowLeft') setPaddle(paddleX - step);
@@ -918,7 +934,7 @@ function startPhotoPaddleGame(state) {
     // Show game over popup with final score
     showGameOverPopup(finalScore);
     
-    // Restore other photos and their animations
+    // Restore other photos and their animations with full opacity
     try { 
       (window._floatingPhotos || []).forEach((s) => { 
         const w = s.wrap; 
@@ -928,8 +944,9 @@ function startPhotoPaddleGame(state) {
           w.style.willChange = 'transform'; // Re-enable performance hint
         }
         if (s.img && s !== state) {
-          // Restart animations for other photos
+          // Restart animations for other photos and ensure full opacity
           s.img.style.animation = '';
+          s.img.style.opacity = '1';
         }
       }); 
     } catch {}
