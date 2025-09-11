@@ -142,34 +142,49 @@ body {
   .game {
     height: 100vh;
     height: 100dvh;
-    padding: 2px;
+    padding: 6px;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
     overflow: hidden;
   }
   
+  .board {
+    margin: 12px auto;
+    max-width: 300px;
+  }
+  
+  .tile {
+    width: 56px;
+    height: 56px;
+    font-size: 28px;
+  }
+  
   .keyboard {
-    margin-top: 0;
-    padding: 2px 0 max(2px, env(safe-area-inset-bottom));
+    margin-top: auto;
+    padding: 12px 6px max(12px, env(safe-area-inset-bottom));
     flex-shrink: 0;
   }
   
   .keyboard-row {
-    gap: 2px;
-    margin-bottom: 2px;
+    gap: 4px;
+    margin-bottom: 6px;
   }
   
   .key {
-    height: 36px;
-    min-width: 22px;
-    font-size: 9px;
-    padding: 0;
+    height: 54px;
+    min-width: 38px;
+    font-size: 12px;
+    font-weight: bold;
+    padding: 0 4px;
+    border-radius: 4px;
+    background: #818384;
+    color: white;
+    border: none;
   }
   
   .key--wide {
-    min-width: 36px;
-    font-size: 8px;
+    min-width: 58px;
+    font-size: 11px;
   }
 }
 .keyboard-row {
@@ -1032,9 +1047,9 @@ body.celebrate .key--present {
 
 @media (max-width: 768px) {
   .game { 
-    padding: 4px; 
-    min-height: 100vh;
-    min-height: 100dvh; /* Use dynamic viewport height */
+    padding: 8px; 
+    height: 100vh;
+    height: 100dvh;
     display: flex;
     flex-direction: column;
     overflow-x: hidden;
@@ -1042,45 +1057,50 @@ body.celebrate .key--present {
   
   .site-header {
     flex-shrink: 0;
-    padding: max(4px, env(safe-area-inset-top) + 2px) 8px 4px;
+    padding: max(8px, env(safe-area-inset-top) + 4px) 12px 8px;
   }
   
   .board { 
-    gap: 3px; 
-    margin: 8px auto 4px; 
+    gap: 4px; 
+    margin: 16px auto; 
     flex-shrink: 0;
-    max-width: 320px;
+    max-width: 350px;
     width: 100%;
   }
   
   .tile { 
-    width: 48px; 
-    height: 48px; 
-    font-size: 20px; 
+    width: 62px; 
+    height: 62px; 
+    font-size: 32px; 
+    font-weight: bold;
   }
   
   .keyboard {
-    margin-top: 4px;
-    padding: 4px 0 max(4px, env(safe-area-inset-bottom));
+    margin-top: auto;
+    padding: 16px 8px max(16px, env(safe-area-inset-bottom));
     flex-shrink: 0;
   }
   
   .keyboard-row {
-    gap: 3px;
-    margin-bottom: 3px;
+    gap: 6px;
+    margin-bottom: 8px;
   }
   
   .key {
-    height: 42px;
-    min-width: 26px;
-    font-size: 11px;
-    padding: 0 1px;
-    border-radius: 3px;
+    height: 58px;
+    min-width: 43px;
+    font-size: 13px;
+    font-weight: bold;
+    padding: 0 6px;
+    border-radius: 4px;
+    background: #818384;
+    color: white;
+    border: none;
   }
   
   .key--wide {
-    min-width: 42px;
-    font-size: 9px;
+    min-width: 65px;
+    font-size: 12px;
   }
   
   /* Birthday message scaling */
@@ -1123,47 +1143,40 @@ body.celebrate .key--present {
 }
 
 @media (max-width: 420px) {
-  .game {
-    height: 100vh;
-    height: 100dvh;
-    padding: 2px;
-  }
-  
-  .site-header {
-    padding: max(2px, env(safe-area-inset-top) + 1px) 6px 2px;
-  }
-  
   .board { 
-    gap: 2px; 
-    margin: 4px auto 2px; 
+    gap: 3px; 
+    margin: 8px auto; 
     max-width: 280px;
   }
   
   .tile { 
-    width: 42px; 
-    height: 42px; 
-    font-size: 18px; 
+    width: 50px; 
+    height: 50px; 
+    font-size: 24px; 
   }
   
   .keyboard {
-    margin-top: 2px;
-    padding: 2px 0 max(2px, env(safe-area-inset-bottom));
+    padding: 10px 4px max(10px, env(safe-area-inset-bottom));
   }
   
   .keyboard-row { 
-    gap: 2px; 
-    margin-bottom: 2px;
+    gap: 3px; 
+    margin-bottom: 5px;
   }
   
   .key { 
-    height: 38px; 
-    min-width: 24px; 
-    font-size: 10px; 
-    padding: 0; 
+    height: 50px; 
+    min-width: 34px; 
+    font-size: 11px; 
+    font-weight: bold;
+    padding: 0 3px;
+    background: #818384;
+    color: white;
+    border: none;
   }
   
   .key--wide { 
-    min-width: 38px; 
-    font-size: 8px; 
+    min-width: 52px; 
+    font-size: 10px; 
   }
 }
