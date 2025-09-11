@@ -139,31 +139,37 @@ body {
 }
 
 @media (max-width: 480px) {
-  .keyboard {
-    margin-top: 8px;
-    padding: 8px 4px max(8px, env(safe-area-inset-bottom));
-    position: relative;
-    bottom: auto;
-    left: auto;
-    right: auto;
-    width: auto;
-    background: transparent;
-    backdrop-filter: none;
-    z-index: auto;
-    border-top: none;
-  }
-  
   .game {
-    padding-bottom: 0;
     height: 100vh;
+    height: 100dvh;
+    padding: 2px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    overflow: hidden;
+  }
+  
+  .keyboard {
+    margin-top: 0;
+    padding: 2px 0 max(2px, env(safe-area-inset-bottom));
+    flex-shrink: 0;
   }
   
   .keyboard-row {
-    gap: 3px;
-    margin-bottom: 4px;
+    gap: 2px;
+    margin-bottom: 2px;
+  }
+  
+  .key {
+    height: 36px;
+    min-width: 22px;
+    font-size: 9px;
+    padding: 0;
+  }
+  
+  .key--wide {
+    min-width: 36px;
+    font-size: 8px;
   }
 }
 .keyboard-row {
@@ -1026,55 +1032,55 @@ body.celebrate .key--present {
 
 @media (max-width: 768px) {
   .game { 
-    padding: 8px 4px; 
+    padding: 4px; 
     height: 100vh;
+    height: 100dvh; /* Use dynamic viewport height */
     display: flex;
     flex-direction: column;
-    overflow-x: hidden;
-    justify-content: flex-start;
+    overflow: hidden;
   }
   
   .site-header {
     flex-shrink: 0;
-    padding: max(8px, env(safe-area-inset-top) + 4px) 12px 8px;
+    padding: max(4px, env(safe-area-inset-top) + 2px) 8px 4px;
   }
   
   .board { 
-    gap: 4px; 
-    margin: 16px auto 8px; 
+    gap: 3px; 
+    margin: 8px auto 4px; 
     flex-shrink: 0;
-    max-width: 350px;
+    max-width: 320px;
     width: 100%;
   }
   
   .tile { 
-    width: 52px; 
-    height: 52px; 
-    font-size: 24px; 
+    width: 48px; 
+    height: 48px; 
+    font-size: 20px; 
   }
   
   .keyboard {
-    margin-top: auto;
-    padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+    margin-top: 4px;
+    padding: 4px 0 max(4px, env(safe-area-inset-bottom));
     flex-shrink: 0;
   }
   
   .keyboard-row {
-    gap: 4px;
-    margin-bottom: 6px;
+    gap: 3px;
+    margin-bottom: 3px;
   }
   
   .key {
-    height: 48px;
-    min-width: 28px;
-    font-size: 12px;
-    padding: 0 2px;
-    border-radius: 4px;
+    height: 42px;
+    min-width: 26px;
+    font-size: 11px;
+    padding: 0 1px;
+    border-radius: 3px;
   }
   
   .key--wide {
-    min-width: 48px;
-    font-size: 10px;
+    min-width: 42px;
+    font-size: 9px;
   }
   
   /* Birthday message scaling */
@@ -1102,36 +1108,47 @@ body.celebrate .key--present {
 }
 
 @media (max-width: 420px) {
+  .game {
+    height: 100vh;
+    height: 100dvh;
+    padding: 2px;
+  }
+  
+  .site-header {
+    padding: max(2px, env(safe-area-inset-top) + 1px) 6px 2px;
+  }
+  
   .board { 
-    gap: 3px; 
-    margin: 12px auto 6px; 
-    max-width: 320px;
+    gap: 2px; 
+    margin: 4px auto 2px; 
+    max-width: 280px;
   }
   
   .tile { 
-    width: 48px; 
-    height: 48px; 
-    font-size: 22px; 
+    width: 42px; 
+    height: 42px; 
+    font-size: 18px; 
   }
   
   .keyboard {
-    padding: 6px 0 max(6px, env(safe-area-inset-bottom));
+    margin-top: 2px;
+    padding: 2px 0 max(2px, env(safe-area-inset-bottom));
   }
   
   .keyboard-row { 
-    gap: 3px; 
-    margin-bottom: 4px;
+    gap: 2px; 
+    margin-bottom: 2px;
   }
   
   .key { 
-    height: 44px; 
-    min-width: 26px; 
-    font-size: 11px; 
-    padding: 0 1px; 
+    height: 38px; 
+    min-width: 24px; 
+    font-size: 10px; 
+    padding: 0; 
   }
   
   .key--wide { 
-    min-width: 44px; 
-    font-size: 9px; 
+    min-width: 38px; 
+    font-size: 8px; 
   }
 }
