@@ -727,6 +727,12 @@ function startPhotoPaddleGame(state) {
       }
     });
   } catch {}
+  
+  // Hide hint and keyboard during bounce game
+  const hint = document.getElementById('hint');
+  const keyboard = document.getElementById('keyboard');
+  if (hint) hint.style.display = 'none';
+  if (keyboard) keyboard.style.display = 'none';
 
   // Create paddle
   const paddle = document.createElement('div');
@@ -923,13 +929,15 @@ function startPhotoPaddleGame(state) {
         }
         if (s.img && s !== state) {
           // Restart animations for other photos
-          const tiltAnimations = ['threeD-tilt-a', 'threeD-tilt-b', 'threeD-tilt-c', 'threeD-tilt-d'];
-          const tiltAnim = tiltAnimations[Math.floor(Math.random() * tiltAnimations.length)];
-          const tiltDuration = 6 + Math.random() * 5;
-          s.img.style.animation = `photo-glow 3s ease-in-out infinite, photo-bounce 2s ease-in-out infinite, ${tiltAnim} ${tiltDuration}s ease-in-out infinite alternate`;
+          s.img.style.animation = '';
         }
       }); 
     } catch {}
+  
+    // Show game menu instead of hint after bounce game
+    setTimeout(() => {
+      showGameMenu();
+    }, 1000);
     // Remove paddle and listeners
     try { paddle.remove(); } catch {}
     try { scoreEl.remove(); } catch {}
