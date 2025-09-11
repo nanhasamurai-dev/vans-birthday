@@ -616,7 +616,9 @@ function startFloatingPhotoBounceLoop() {
     
     // Skip if no photos or window dimensions are invalid
     if (states.length === 0 || maxX <= 0 || maxY <= 0) {
-      requestAnimationFrame(step);
+      if (window._floatingPhotoLoop) {
+        requestAnimationFrame(step);
+      }
       return;
     }
     
@@ -683,9 +685,9 @@ function startFloatingPhotoBounceLoop() {
       const bottom = maxY - s.size;
       let bounced = false;
 
-      if (s.x <= 0) { s.x = 0; s.vx = Math.abs(s.vx); swapImage(); playGameSound('bounce'); }
-      if (s.x >= right) { s.x = right; s.vx = -Math.abs(s.vx); swapImage(); playGameSound('bounce'); }
-      if (s.y <= 0) { s.y = 0; s.vy = Math.abs(s.vy); swapImage(); playGameSound('bounce'); }
+      if (s.x <= 1) { s.x = 1; s.vx = Math.abs(s.vx); }
+      if (s.x >= right - 1) { s.x = right - 1; s.vx = -Math.abs(s.vx); }
+      if (s.y <= 1) { s.y = 1; s.vy = Math.abs(s.vy); }
       else if (s.y >= bottom) { s.y = bottom; s.vy = -Math.abs(s.vy); bounced = true; }
 
       if (bounced && s.img) {
@@ -748,7 +750,9 @@ function startFloatingPhotoBounceLoop() {
         }
       }
     }
-    requestAnimationFrame(step);
+    if (window._floatingPhotoLoop) {
+      requestAnimationFrame(step);
+    }
   }
   requestAnimationFrame(step);
 }
@@ -926,49 +930,37 @@ function startPhotoPaddleGame(state) {
     const right = window.innerWidth - size;
     const bottom = window.innerHeight - size;
     
-    // Wall collisions (top/left/right reflect, bottom loses unless paddle hit)
-    if (x <= 0) { 
-      x = 0; 
-      vx = Math.abs(vx); 
-      speed *= 1.08; // Gradual speed increase
-      swapImage(); 
-    }
-    else if (x >= right) { 
-      x = right; 
-      vx = -Math.abs(vx); 
-      speed *= 1.08; // Gradual speed increase
-      swapImage(); 
-    }
-    if (y <= 0) { 
-      y = 0; 
+    // Wall collisions with proper boundary detection
+    if (x <= 1) { x = 1; vx = Math.abs(vx); swapImage(); playGameSound('bounce'); }
+    if (x >= right - 1) { x = right - 1; vx = -Math.abs(vx); swapImage(); playGameSound('bounce'); }
+    if (y <= 1) { 
+      y = 1; 
       vy = Math.abs(vy); 
       speed *= 1.08; // Gradual speed increase
       swapImage(); 
+      playGameSound('bounce');
     }
 
     // Paddle collision - fixed to ensure photo border actually touches paddle
     const paddleTop = window.innerHeight - 28;
     const ballBottom = y + size;
-    const ballTop = y;
+    const ballCenterX = x + size / 2;
     const ballLeft = x;
     const ballRight = x + size;
-    const ballCenterX = x + size / 2;
     
-    // Check if ball is at paddle level and overlapping horizontally
-    if (ballBottom >= paddleTop && ballTop <= paddleTop + paddleHeight) {
-      if (ballCenterX >= paddleX && ballCenterX <= paddleX + paddleWidth) {
-        // Ensure ball is exactly touching paddle top
-        y = paddleTop - size;
-        // Reflect with angle based on hit position
-        const hitPos = (ballCenterX - paddleX) / paddleWidth - 0.5; // -0.5..0.5
-        const angle = hitPos * (Math.PI / 2.5); // spread
-        const speedMag = speed * 1.08; // Gradual speed increase
-        vx = Math.sin(angle) * speedMag / speed;
-        vy = -Math.cos(angle) * speedMag / speed;
-        speed = speedMag;
-        swapImage();
-        playGameSound('paddle');
-      }
+    if (ballBottom >= paddleTop - 2 && ballBottom <= paddleTop + paddleHeight + 2 && 
+        ballRight >= paddleX && ballLeft <= paddleX + paddleWidth) {
+      // Ensure ball is exactly touching paddle top
+      y = paddleTop - size;
+      // Reflect with angle based on hit position
+      const hitPos = (ballCenterX - paddleX) / paddleWidth - 0.5; // -0.5..0.5
+      const angle = hitPos * (Math.PI / 2.5); // spread
+      const speedMag = speed * 1.08; // Gradual speed increase
+      vx = Math.sin(angle) * speedMag / speed;
+      vy = -Math.cos(angle) * speedMag / speed;
+      speed = speedMag;
+      swapImage();
+      playGameSound('paddle');
     }
 
     // Missed paddle -> end game
