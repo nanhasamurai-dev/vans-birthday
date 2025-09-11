@@ -22,6 +22,7 @@ body {
   color: var(--text);
   background: var(--bg);
   transition: background 600ms ease;
+  overscroll-behavior-y: none;
 }
 
 .site-header {
@@ -47,7 +48,7 @@ body {
   cursor: pointer;
 }
 
-.game { max-width: 500px; margin: 0 auto; padding: 16px; }
+.game { max-width: 500px; margin: 0 auto; padding: 16px; display: flex; flex-direction: column; min-height: 100svh; }
 
 .board {
   display: grid;
@@ -123,6 +124,8 @@ body {
   display: flex;
   gap: 6px;
   justify-content: center;
+  width: 100%;
+  padding: 0 4px;
 }
 .key {
   background: #d3d6da0f;
@@ -735,6 +738,11 @@ body.celebrate .key--present {
 }
 
 @media (max-width: 420px) {
-  .tile { width: 52px; height: 52px; font-size: 24px; }
-  .key { height: 48px; }
+  .game { padding: 8px; }
+  .board { gap: 6px; margin: 8px 0 12px 0; }
+  .tile { width: 46px; height: 46px; font-size: 22px; }
+  .keyboard { margin-top: auto; padding-bottom: max(8px, env(safe-area-inset-bottom)); position: sticky; bottom: 0; background: linear-gradient(180deg, rgba(18,18,19,0), rgba(18,18,19,0.9)); backdrop-filter: blur(2px); }
+  .keyboard-row { gap: 4px; }
+  .key { height: 44px; min-width: 36px; font-size: 11px; padding: 0 4px; }
+  .key--wide { min-width: 56px; font-size: 10px; }
 }

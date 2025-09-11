@@ -15,7 +15,7 @@ const CONFIG = {
     "assets/vans7.jpg",
     "assets/vans8.jpg"
   ],
-  videoEmbedHtml: '<iframe src="https://player.vimeo.com/video/1117547643?badge=0&amp;autopause=0&amp;player_id=0&amp;app_id=58479" width="1080" height="1920" frameborder="0" allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share" referrerpolicy="strict-origin-when-cross-origin" title="LoL Just Kidding"></iframe>'
+  videoEmbedHtml: '<iframe id="vimeoPlayer" src="https://player.vimeo.com/video/1117547643?autopause=1&playsinline=1&title=0&byline=0&portrait=0" style="width:100%;aspect-ratio:9/16;height:auto;max-height:80vh;border:0;border-radius:12px;background:#000" allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media" allowfullscreen webkitallowfullscreen mozallowfullscreen title="Happy Birthday Vans !!!!!"></iframe>'
 };
 
 // Allow URL overrides like ?name=Alex&word=CAKE
@@ -319,8 +319,7 @@ function startConfetti(durationMs = 5000) {
     a: Math.random() * Math.PI
   }));
   let running = true;
-  // Remove timeout to make confetti run continuously
-  // setTimeout(() => running = false, durationMs);
+  setTimeout(() => running = false, durationMs);
   window.addEventListener("resize", resize);
   requestAnimationFrame(loop);
 
@@ -351,32 +350,30 @@ function createFloatingPhotos() {
   const photos = [];
   const animations = [
     'float-around-full',
-    'spiral-dance', 
+    'spiral-dance',
     'bounce-zoom',
     'wave-motion',
     'zigzag-dance',
     'orbit-motion'
   ];
-  
   CONFIG.galleryImages.forEach((src, index) => {
     const img = document.createElement("img");
     img.src = src;
     img.alt = `${CONFIG.friendName} photo`;
     img.className = "floating-photo";
     
-    // Calculate random position across entire viewport
-    const leftPos = Math.random() * (window.innerWidth - 160);
-    const topPos = Math.random() * (window.innerHeight - 160);
+    const size = 140;
+    const leftPos = Math.max(0, Math.random() * (window.innerWidth - size));
+    const topPos = Math.max(0, Math.random() * (window.innerHeight - size));
     
-    // Randomly select animation and duration
     const animation = animations[Math.floor(Math.random() * animations.length)];
-    const duration = 6 + Math.random() * 4; // 6-10 seconds
-    const delay = index * 0.8 + Math.random() * 2; // Staggered start times
+    const duration = 9 + Math.random() * 6; // 9-15s
+    const delay = Math.random() * 0.4; // tiny stagger
     
     img.style.cssText = `
       position: fixed;
-      width: 160px;
-      height: 160px;
+      width: ${size}px;
+      height: ${size}px;
       object-fit: cover;
       border-radius: 50%;
       border: 4px solid var(--ferrari-gold);
@@ -385,24 +382,29 @@ function createFloatingPhotos() {
       pointer-events: auto;
       left: ${leftPos}px;
       top: ${topPos}px;
-      animation: ${animation} ${duration}s ease-in-out infinite;
+      animation: ${animation} ${duration}s cubic-bezier(0.25, 0.1, 0.25, 1) infinite;
       animation-delay: ${delay}s;
       cursor: pointer;
     `;
     
-    // Add click interaction for photos with special effect
+    // Unique click animations per photo
+    const clickEffects = [
+      (el) => { el.style.animation = 'none'; el.style.transition = 'transform 1.1s cubic-bezier(0.19,1,0.22,1), box-shadow 1.1s'; el.style.transform = 'scale(1.85) rotate(540deg)'; el.style.boxShadow = '0 0 70px rgba(255, 215, 0, 1), 0 0 120px rgba(220, 20, 60, 0.8)'; },
+      (el) => { el.style.animation = 'none'; el.style.transition = 'transform 1s ease, box-shadow 1s'; el.style.transform = 'rotateY(540deg) scale(1.7)'; el.style.boxShadow = '0 0 70px rgba(255, 215, 0, 1), 0 0 120px rgba(220, 20, 60, 0.8)'; },
+      (el) => { el.style.animation = 'none'; el.style.transition = 'transform 900ms cubic-bezier(0.34,1.56,0.64,1), box-shadow 900ms'; el.style.transform = 'translateY(-50px) scale(1.95)'; el.style.boxShadow = '0 0 80px rgba(255, 215, 0, 1), 0 0 140px rgba(220, 20, 60, 0.8)'; },
+      (el) => { el.style.animation = 'none'; el.style.transition = 'transform 1.1s ease, filter 1.1s, box-shadow 1.1s'; el.style.transform = 'rotate(720deg) skew(6deg, 6deg) scale(1.8)'; el.style.filter = 'saturate(1.4)'; el.style.boxShadow = '0 0 90px rgba(255, 215, 0, 1), 0 0 160px rgba(220, 20, 60, 0.8)'; },
+      (el) => { el.style.animation = 'none'; el.style.transition = 'transform 1s ease, box-shadow 1s'; el.style.transform = 'perspective(700px) rotateX(25deg) rotateY(25deg) scale(1.85)'; el.style.boxShadow = '0 20px 90px rgba(0,0,0,0.5), 0 0 90px rgba(255, 215, 0, 1)'; }
+    ];
+    const effect = clickEffects[index % clickEffects.length];
     img.addEventListener("click", () => {
-      img.style.animation = "none";
-      img.style.transform = "scale(1.8) rotate(720deg)";
-      img.style.transition = "all 1.5s cubic-bezier(0.68, -0.55, 0.265, 1.55)";
-      img.style.boxShadow = "0 0 50px rgba(255, 215, 0, 1), 0 0 100px rgba(220, 20, 60, 0.8)";
-      
+      effect(img);
       setTimeout(() => {
-        img.style.animation = `${animation} ${duration}s ease-in-out infinite`;
+        img.style.animation = `${animation} ${duration}s cubic-bezier(0.25, 0.1, 0.25, 1) infinite`;
         img.style.transform = "";
         img.style.transition = "";
+        img.style.filter = "";
         img.style.boxShadow = "0 0 25px rgba(255, 215, 0, 0.8), 0 0 50px rgba(220, 20, 60, 0.4)";
-      }, 1500);
+      }, 1200);
     });
     
     document.body.appendChild(img);
@@ -410,7 +412,6 @@ function createFloatingPhotos() {
   });
   
   // Keep photos animating continuously - no removal
-  // Photos will animate forever until page refresh
 }
 
 function showSurprisePopup() {
@@ -419,6 +420,7 @@ function showSurprisePopup() {
   popup.innerHTML = `
     <div class="surprise-content">
       <h3>🎉 Click here for surprise! 🎉</h3>
+      <p>Special birthday video awaits!</p>
     </div>
   `;
   popup.style.cssText = `
@@ -450,81 +452,36 @@ function showVideoModal() {
   videoModal.className = "video-modal";
   videoModal.innerHTML = `
     <form method="dialog">
-      <div class="video-header">
-        <h2>🎬 Happy Birthday Vans 🎬</h2>
-        <button type="button" class="close-btn" aria-label="Close video">✕</button>
-      </div>
+      <h2>🎬 Happy Birthday Vans !!!!! 🎬</h2>
       <div class="video-container">
         ${CONFIG.videoEmbedHtml}
       </div>
-      <div class="video-controls">
-        <button type="button" class="control-btn" id="playPauseBtn">▶️ Play</button>
-        <button type="button" class="control-btn" id="muteBtn">🔊 Unmute</button>
-        <button type="button" class="control-btn" id="fullscreenBtn">⛶ Fullscreen</button>
-        <div class="volume-control">
-          <label for="volumeSlider">🔊</label>
-          <input type="range" id="volumeSlider" min="0" max="100" value="100" class="volume-slider">
-        </div>
-      </div>
-      <div class="video-info">
-        <p>🎉 Enjoy this special birthday video! 🎉</p>
-        <p>Click anywhere outside the video to close</p>
-      </div>
+      <menu>
+        <button class="btn">Close</button>
+      </menu>
     </form>
   `;
   videoModal.style.cssText = `
     border: none;
-    border-radius: 16px;
-    padding: 0;
+    border-radius: 12px;
+    padding: 20px;
     background: var(--ferrari-black);
     color: var(--text);
-    max-width: 500px;
-    width: 95vw;
-    box-shadow: 0 0 50px rgba(220, 20, 60, 0.5);
+    max-width: 800px;
+    width: 90vw;
   `;
-  videoModal.style.setProperty("::backdrop", "background: rgba(0,0,0,0.9)");
+  videoModal.style.setProperty("::backdrop", "background: rgba(0,0,0,0.8)");
   
   document.body.appendChild(videoModal);
   
-  // Add event listeners for custom controls
-  const iframe = videoModal.querySelector('iframe');
-  const playPauseBtn = videoModal.querySelector('#playPauseBtn');
-  const muteBtn = videoModal.querySelector('#muteBtn');
-  const fullscreenBtn = videoModal.querySelector('#fullscreenBtn');
-  const volumeSlider = videoModal.querySelector('#volumeSlider');
-  const closeBtn = videoModal.querySelector('.close-btn');
+  const vimeoIframe = videoModal.querySelector('#vimeoPlayer');
+  const restoreBodyScroll = () => { try { document.body.style.overflow = ""; } catch {} };
+  // Lock background scroll on mobile
+  try { document.body.style.overflow = "hidden"; } catch {}
   
-  // Close button functionality
-  closeBtn.addEventListener('click', () => {
-    videoModal.close();
-  });
-  
-  // Play/Pause button (note: limited control over Vimeo iframe)
-  playPauseBtn.addEventListener('click', () => {
-    // Vimeo iframe doesn't allow external control, so we'll just show a message
-    showToast("Use the video controls to play/pause");
-  });
-  
-  // Mute button (note: limited control over Vimeo iframe)
-  muteBtn.addEventListener('click', () => {
-    showToast("Use the video controls to mute/unmute");
-  });
-  
-  // Fullscreen button
-  fullscreenBtn.addEventListener('click', () => {
-    if (iframe.requestFullscreen) {
-      iframe.requestFullscreen();
-    } else if (iframe.webkitRequestFullscreen) {
-      iframe.webkitRequestFullscreen();
-    } else if (iframe.msRequestFullscreen) {
-      iframe.msRequestFullscreen();
-    }
-  });
-  
-  // Volume slider (note: limited control over Vimeo iframe)
-  volumeSlider.addEventListener('input', (e) => {
-    showToast(`Volume: ${e.target.value}%`);
-  });
+  if (typeof videoModal.showModal === "function") {
+    videoModal.showModal();
+  }
   
   // Close on backdrop click
   videoModal.addEventListener('click', (e) => {
@@ -532,12 +489,25 @@ function showVideoModal() {
       videoModal.close();
     }
   });
-  
-  if (typeof videoModal.showModal === "function") {
-    videoModal.showModal();
-  }
-  
+
+  // Close on Escape
+  videoModal.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') videoModal.close();
+  });
+
+  // Ensure video stops when dialog closes
   videoModal.addEventListener("close", () => {
+    if (vimeoIframe) {
+      try {
+        vimeoIframe.contentWindow && vimeoIframe.contentWindow.postMessage({ method: 'pause' }, '*');
+      } catch {}
+      // Unload iframe to stop playback/network
+      const src = vimeoIframe.getAttribute('src');
+      vimeoIframe.setAttribute('src', '');
+      // Small timeout to fully detach, then restore original src for next open
+      setTimeout(() => { try { vimeoIframe.setAttribute('src', src || ''); } catch {} }, 0);
+    }
+    restoreBodyScroll();
     videoModal.remove();
   });
 }
@@ -585,13 +555,9 @@ function lightUpLetters() {
           key.style.animation = "";
         }, 750);
       }
-    }, index * 100); // 100ms delay between each letter (faster)
+    }, index * 80); // faster pacing
   });
-  
-  // Start photo animation after all letters are lit
-  setTimeout(() => {
-    createFloatingPhotos();
-  }, letters.length * 100 + 500); // Wait for all letters + 0.5 seconds
+  // Photos start immediately; no additional delay here
 }
 
 function restructureGridForMessage(message) {
@@ -713,12 +679,10 @@ function winSequence() {
   setTimeout(() => {
     document.body.classList.add("celebrate");
     playBirthdayJingle();
-    startConfetti(); // Run continuously
-    
-    // Light up letters first (this will also start photos after completion)
-    setTimeout(() => {
-      lightUpLetters();
-    }, 1000);
+    startConfetti(6000);
+    // Start photos immediately, then light up letters rapidly
+    createFloatingPhotos();
+    setTimeout(() => { lightUpLetters(); }, 400);
     
     // Show surprise popup at the very end (after all animations)
     setTimeout(() => {
@@ -744,6 +708,4 @@ document.addEventListener("keydown", (e) => {
 // Initialize
 renderBoard();
 renderKeyboard();
-
-
 
