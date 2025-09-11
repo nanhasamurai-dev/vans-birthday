@@ -1123,7 +1123,7 @@ function showVideoModal() {
         ${CONFIG.videoEmbedHtml}
       </div>
       <menu>
-        <button class="btn">Close</button>
+        <button class="btn close-video-btn">Close</button>
       </menu>
     </form>
   `;
@@ -1162,32 +1162,32 @@ function showVideoModal() {
   });
 
   // Ensure video stops when dialog closes
-  videoModal.addEventListener("close", () => {
+  const closeVideoModal = () => {
+    // Stop video playback by clearing src
+    const vimeoIframe = videoModal.querySelector('iframe');
     if (vimeoIframe) {
-      try {
-        vimeoIframe.contentWindow && vimeoIframe.contentWindow.postMessage({ method: 'pause' }, '*');
-      } catch {}
-      // Unload iframe to stop playback/network
       const src = vimeoIframe.getAttribute('src');
       vimeoIframe.setAttribute('src', '');
       // Small timeout to fully detach, then restore original src for next open
       setTimeout(() => { try { vimeoIframe.setAttribute('src', src || ''); } catch {} }, 0);
     }
-    // Restore floating photos to full opacity post-video
-    try {
-      const states = window._floatingPhotos || [];
-      states.forEach((state) => {
-        const wrap = state.wrap || state;
-        if (wrap && wrap.style) wrap.style.opacity = '1';
-      });
-      enablePhotoBounceGameClicks();
-    } catch {}
     restoreBodyScroll();
     videoModal.remove();
     
     // Show menu after video popup is closed
     showGameMenu();
-  });
+  };
+
+  videoModal.addEventListener("close", closeVideoModal);
+  
+  // Add click handler for close button
+  const closeBtn = videoModal.querySelector('.close-video-btn');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      closeVideoModal();
+    });
+  }
 }
 
 function showGameMenu() {
