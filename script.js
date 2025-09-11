@@ -480,6 +480,8 @@ function createFloatingPhotos() {
       will-change: transform;
       transform: translate3d(${leftPos}px, ${topPos}px, 0);
       transform-style: preserve-3d;
+      -webkit-transform: translate3d(${leftPos}px, ${topPos}px, 0);
+      -webkit-transform-style: preserve-3d;
       --ph-size: ${size}px;
     `;
 
@@ -597,6 +599,12 @@ function startFloatingPhotoBounceLoop() {
   let last = performance.now();
   let frameCount = 0;
   
+  // Force enable on mobile by checking user agent
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  if (isMobile) {
+    console.log('Mobile device detected, enabling photo animations');
+  }
+  
   function step(now) {
     const dt = Math.min(16.67, now - last) / 1000; // cap at 60fps
     last = now;
@@ -605,6 +613,12 @@ function startFloatingPhotoBounceLoop() {
     const states = window._floatingPhotos || [];
     const maxX = Math.max(0, window.innerWidth);
     const maxY = Math.max(0, window.innerHeight);
+    
+    // Skip if no photos or window dimensions are invalid
+    if (states.length === 0 || maxX <= 0 || maxY <= 0) {
+      requestAnimationFrame(step);
+      return;
+    }
     
     // Size classifications for dynamic sizing
     const sizeClasses = [
@@ -616,8 +630,12 @@ function startFloatingPhotoBounceLoop() {
     
     // Process all photos each frame for smoother animation
     states.forEach((s) => {
-      if (!s || !s.wrap) return;
-      if (s._inGame) return; // skip physics for the active game ball
+      if (!s || !s.wrap || s._inGame) return;
+      
+      // Force re-enable hardware acceleration on mobile
+      if (!s.wrap.style.willChange || s.wrap.style.willChange === 'auto') {
+        s.wrap.style.willChange = 'transform';
+      }
       
       // Handle size transitions
       if (now >= s.nextSizeChangeTime) {
@@ -678,6 +696,7 @@ function startFloatingPhotoBounceLoop() {
       }
       
       s.wrap.style.transform = `translate3d(${s.x}px, ${s.y}px, 0)`;
+      s.wrap.style.webkitTransform = `translate3d(${s.x}px, ${s.y}px, 0)`;
     });
 
     // Handle photo-photo collisions (elastic, equal mass)
@@ -960,6 +979,7 @@ function startPhotoPaddleGame(state) {
     
     // Apply transform with hardware acceleration
     wrap.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+    wrap.style.webkitTransform = `translate3d(${x}px, ${y}px, 0)`;
     requestAnimationFrame(gameStep);
   }
   
